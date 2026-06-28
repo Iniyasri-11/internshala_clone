@@ -19,6 +19,14 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.get("/", (req, res) => {
   res.send("hello this is internshala backend");
 });
+app.get("/api/diag", async (req, res) => {
+  const mongoose = require("mongoose");
+  res.json({
+    dbName: mongoose.connection.name,
+    dbReadyState: mongoose.connection.readyState,
+    dbUrlLength: (process.env.DATABASE_URL || "").length
+  });
+});
 app.use("/api", router);
 connect();
 
