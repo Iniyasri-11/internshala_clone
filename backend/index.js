@@ -27,12 +27,26 @@ app.get("/api/diag", async (req, res) => {
     for (let col of cols) {
       counts[col.name] = await mongoose.connection.db.collection(col.name).countDocuments();
     }
-    const maskedUrl = (process.env.DATABASE_URL || "").replace(/\/\/.*@/, "//***:***@");
+    
+    // Parse DATABASE_URL safely
+    const url = process.env.DATABASE_URL || "";
+    let dbDetails = {};
+    if (url.startsWith("mongodb")) {
+      const cleanUrl = url.replace("mongodb+srv://", "http://").replace("mongodb://", "http://");
+      const parsed = new URL(cleanUrl);
+      dbDetails = {
+        host: parsed.host,
+        username: parsed.username,
+        pathname: parsed.pathname,
+        search: parsed.search
+      };
+    }
+
     res.json({
       dbName: mongoose.connection.name,
       dbReadyState: mongoose.connection.readyState,
       counts: counts,
-      databaseUrl: maskedUrl
+      dbDetails: dbDetails
     });
   } catch (err) {
     res.json({ error: err.message });
