@@ -10,11 +10,27 @@ import {
   Calendar,
   ChevronRight,
   MapPin,
+  Mail,
 } from "lucide-react";
+import { useSelector } from "react-redux";
+import { selectuser } from "@/Feature/Userslice";
 import Link from "next/link";
-import axios from "axios";
+import { api } from "@/utils/api";
+import { useLanguage } from "@/context/LanguageContext";
 
-export default function SvgSlider() {
+
+export default function HomePage() {
+  const user = useSelector(selectuser);
+  const { t } = useLanguage();
+  const [hasMounted, setHasMounted] = useState(false);
+  const [internships, setInternships] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   const categories = [
     "Big Brands",
     "Work From Home",
@@ -84,67 +100,84 @@ export default function SvgSlider() {
   //     category: "Design",
   //   },
   // ];
+  const getCategoryTranslation = (cat: string) => {
+    const map: Record<string, string> = {
+      "Big Brands": "big_brands",
+      "Work From Home": "work_from_home",
+      "Part-time": "part_time",
+      "MBA": "mba",
+      "Engineering": "engineering",
+      "Media": "media",
+      "Design": "design",
+      "Data Science": "data_science",
+    };
+    const key = map[cat];
+    return key ? t(`home.categories.${key}`) : cat;
+  };
+
   const slides = [
     {
       pattern: "pattern-1",
-      title: "Start Your Career Journey",
+      title: t("home.slides.journey"),
       bgColor: "bg-indigo-600",
     },
     {
       pattern: "pattern-2",
-      title: "Learn From The Best",
+      title: t("home.slides.best"),
       bgColor: "bg-blue-600",
     },
     {
       pattern: "pattern-3",
-      title: "Grow Your Skills",
+      title: t("home.slides.skills"),
       bgColor: "bg-purple-600",
     },
     {
       pattern: "pattern-4",
-      title: "Connect With Top Companies",
+      title: t("home.slides.connect"),
       bgColor: "bg-teal-600",
     },
   ];
 
   const stats = [
-    { number: "300K+", label: "companies hiring" },
-    { number: "10K+", label: "new openings everyday" },
-    { number: "21Mn+", label: "active students" },
-    { number: "600K+", label: "learners" },
+    { number: "300K+", label: t("home.stats.companies") },
+    { number: "10K+", label: t("home.stats.openings") },
+    { number: "21Mn+", label: t("home.stats.students") },
+    { number: "600K+", label: t("home.stats.learners") },
   ];
-  const [internships, setinternship] = useState<any>([]);
-  const [jobs, setjob] = useState<any>([]);
+
+
   useEffect(() => {
-    const fetchdata = async () => {
+    const fetchData = async () => {
       try {
         const [internshipres, jobres] = await Promise.all([
-          axios.get("https://internshala-clone-y2p2.onrender.com/api/internship"),
-          axios.get("https://internshala-clone-y2p2.onrender.com/api/job"),
+          api.get("/internship"),
+          api.get("/job"),
         ]);
-        setinternship(internshipres.data);
-        setjob(jobres.data);
+        setInternships(internshipres.data);
+        setJobs(jobres.data);
       } catch (error) {
         console.log(error);
       }
     };
-    fetchdata();
+
+    fetchData();
   }, []);
-  const [selectedCategory, setSelectedCategory] = useState("");
+
   const filteredInternships = internships.filter(
     (item: any) => !selectedCategory || item.category === selectedCategory
   );
   const filteredJobs = jobs.filter(
     (item: any) => !selectedCategory || item.category === selectedCategory
   );
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* hero section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          Make your dream career a reality
+          {t("home.hero_title")}
         </h1>
-        <p className="text-xl text-gray-600">Trending on InternArea 🔥</p>
+        <p className="text-xl text-gray-600">{t("home.hero_subtitle")}</p>
       </div>
       {/* Swiper section */}
       <div className="mb-16">
@@ -244,7 +277,7 @@ export default function SvgSlider() {
       {/* Category section */}
       <div className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Latest internships on Intern Area
+          {t("home.headings.internships")}
         </h2>
         <div className="flex flex-wrap gap-4">
           <span className="text-gray-700 font-medium">POPULAR CATEGORIES:</span>
@@ -258,7 +291,7 @@ export default function SvgSlider() {
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {category}
+              {getCategoryTranslation(category)}
             </button>
           ))}
         </div>
@@ -268,7 +301,7 @@ export default function SvgSlider() {
         {filteredInternships.map((internship: any, index: any) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-md p-6 transition-transform hover:transform hover:scale-105"
+            className="bg-white rounded-lg shadow-md p-6 transition-transform hover:transform hover:scale-105 text-left"
           >
             <div className="flex items-center gap-2 text-blue-600 mb-4">
               <ArrowUpRight size={20} />
@@ -281,26 +314,26 @@ export default function SvgSlider() {
             <div className="space-y-3 text-gray-600">
               <div className="flex items-center gap-2">
                 <MapPin size={18} />
-                <span>{internship.location}</span>
+                <span>{t("home.fields.location")}: {internship.location}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Banknote size={18} />
-                <span>{internship.stipend}</span>
+                <span>{t("home.fields.stipend")}: {internship.stipend}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={18} />
-                <span>{internship.duration}</span>
+                <span>{t("home.fields.duration")}: {internship.duration}</span>
               </div>
             </div>
             <div className="flex items-center justify-between mt-6">
               <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                Internship
+                {t("opportunities.heading_internships")}
               </span>
               <Link
                 href={`/detailiternship/${internship._id}`}
-                className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold text-sm"
               >
-                View details
+                {t("home.buttons.view_details")}
                 <ChevronRight size={16} />
               </Link>
             </div>
@@ -309,12 +342,12 @@ export default function SvgSlider() {
       </div>
       {/* Jobs grid   */}
       <div className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Latest Jobs</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-left">{t("home.headings.jobs")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
           {filteredJobs.map((job: any, index: any) => (
             <div
               key={index}
-              className="bg-white rounded-lg shadow-md p-6 transition-transform hover:transform hover:scale-105"
+              className="bg-white rounded-lg shadow-md p-6 transition-transform hover:transform hover:scale-105 text-left"
             >
               <div className="flex items-center gap-2 text-blue-600 mb-4">
                 <ArrowUpRight size={20} />
@@ -327,26 +360,26 @@ export default function SvgSlider() {
               <div className="space-y-3 text-gray-600">
                 <div className="flex items-center gap-2">
                   <MapPin size={18} />
-                  <span>{job.location}</span>
+                  <span>{t("home.fields.location")}: {job.location}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Banknote size={18} />
-                  <span>{job.CTC}</span>
+                  <span>{t("home.fields.ctc")}: {job.CTC}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar size={18} />
-                  <span>{job.Experience}</span>
+                  <span>{t("home.fields.experience")}: {job.Experience}</span>
                 </div>
               </div>
               <div className="flex items-center justify-between mt-6">
                 <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                  Jobs
+                  {t("opportunities.heading_jobs")}
                 </span>
                 <Link
-                  href={`/detailInternship?q=${job._id}`}
-                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  href={`/detailjob/${job._id}`}
+                  className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold text-sm"
                 >
-                  View details
+                  {t("home.buttons.view_details")}
                   <ChevronRight size={16} />
                 </Link>
               </div>

@@ -11,7 +11,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { api } from "@/utils/api";
 import { toast } from "react-toastify";
 const index = () => {
   const [formData, setFormData] = useState({
@@ -47,7 +47,7 @@ const index = () => {
     }
     try {
       setisloading(true);
-      const res = await axios.post("https://internshala-clone-y2p2.onrender.com/api/internship", formData);
+      const res = await api.post("/internship", formData);
       toast.success("job posted successfuly");
       router.push("/adminpanel");
     } catch (error) {

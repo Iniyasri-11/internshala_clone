@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "@/utils/api";
 import {
   ArrowUpRight,
   Calendar,
@@ -11,7 +11,10 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
+
 // const internshipData = [
 //   {
 //     _id: "1",
@@ -45,6 +48,10 @@ import React, { useEffect, useState } from "react";
 //   },
 // ];
 const index = () => {
+  const router = useRouter();
+  const { t } = useLanguage();
+  const queryPlan = typeof router.query.plan === 'string' ? router.query.plan : '';
+
   const [filteredInternships, setfilteredInternships] = useState<any>([]);
   const [isFiltervisible, setisFiltervisible] = useState(false);
   const [filter, setfilters] = useState({
@@ -58,7 +65,7 @@ const index = () => {
   useEffect(()=>{
     const fetchdata=async()=>{
       try {
-        const res=await axios.get( "https://internshala-clone-y2p2.onrender.com/api/internship")     
+        const res=await api.get("/internship")     
         setinternship(res.data)
         setfilteredInternships(res.data)
       } catch (error) {
@@ -101,62 +108,62 @@ const index = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Filter  */}
-          <div className="hidden md:block w-64 bg-white rounded-lg shadow-sm p-6 h-fit">
+          <div className="hidden md:block w-64 bg-white rounded-lg shadow-sm p-6 h-fit text-left">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2">
                 <Filter className="h-5 w-5 text-blue-600" />
-                <span className="font-medium text-black">Filters</span>
+                <span className="font-medium text-black">{t("opportunities.filters")}</span>
               </div>
               <button
                 onClick={clearFilters}
-                className="text-sm text-blue-600 hover:text-blue-700"
+                className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
               >
-                Clear all
+                {t("opportunities.clear_all")}
               </button>
             </div>
             <div className="space-y-6">
               {/* Profile/Category Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Category
+                  {t("opportunities.category")}
                 </label>
                 <input
                   type="text"
                   name="category"
                   value={filter.category}
                   onChange={handlefilterchange}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-700"
-                  placeholder="e.g. Marketing Intern"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm focus:outline-none"
+                  placeholder="e.g. Marketing"
                 />
               </div>
               {/* Location Filter */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
+                  {t("opportunities.location")}
                 </label>
                 <input
                   type="text"
                   name="location"
                   value={filter.location}
                   onChange={handlefilterchange}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-700"
-                  placeholder="e.g. Mumbai"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-700 text-sm focus:outline-none"
+                  placeholder="e.g. New York"
                 />
               </div>
 
               {/* Checkboxes */}
               <div className="space-y-3">
-                <label className="flex items-center space-x-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
                     name="workFromHome"
                     checked={filter.workFromHome}
                     onChange={handlefilterchange}
-                    className="h-4 w-4 text-blue-600 rounded "
+                    className="h-4 w-4 text-blue-600 rounded"
                   />
-                  <span className="text-gray-700">Work from home</span>
+                  <span className="text-gray-700 text-sm font-medium">{t("opportunities.work_from_home")}</span>
                 </label>
-                <label className="flex items-center space-x-2">
+                <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="checkbox"
                     name="partTime"
@@ -164,14 +171,14 @@ const index = () => {
                     onChange={handlefilterchange}
                     className="h-4 w-4 text-blue-600 rounded"
                   />
-                  <span className="text-gray-700">Part-time</span>
+                  <span className="text-gray-700 text-sm font-medium">{t("opportunities.part_time")}</span>
                 </label>
               </div>
 
               {/* Stipend Range */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Monthly Stipend (₹)
+                  {t("home.fields.stipend")} (K)
                 </label>
                 <input
                   type="range"
@@ -180,7 +187,7 @@ const index = () => {
                   max="100"
                   value={filter.stipend}
                   onChange={handlefilterchange}
-                  className="w-full"
+                  className="w-full cursor-pointer"
                 />
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>₹0</span>
@@ -197,12 +204,12 @@ const index = () => {
                 className="w-full flex items-center justify-center space-x-2 bg-white p-3 rounded-lg shadow-sm text-black"
               >
                 <Filter className="h-5 w-5" />
-                <span> Show Filters</span>
+                <span>{t("opportunities.filters")}</span>
               </button>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
               <p className="text-center font-medium text-black">
-                {filteredInternships.length} Internships found
+                {filteredInternships.length} {t("opportunities.heading_internships")}
               </p>
             </div>
             <div className="space-y-4">
@@ -215,30 +222,30 @@ const index = () => {
                     <ArrowUpRight className="h-5 w-5" />
                     <span className="font-medium">Actively Hiring</span>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  <h2 className="text-xl font-bold text-gray-900 mb-2 text-left">
                     {internship.title}
                   </h2>
-                  <p className="text-gray-600 mb-4">{internship.company}</p>
+                  <p className="text-gray-600 mb-4 text-left">{internship.company}</p>
 
-                  <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-3 gap-4 mb-6 text-left">
                     <div className="flex items-center space-x-2 text-gray-600">
                       <PlayCircle className="h-5 w-5" />
                       <div>
-                        <p className="text-sm font-medium">Start Date</p>
-                        <p className="text-sm">{internship.startDate}</p>
+                        <p className="text-sm font-medium">{t("home.fields.duration")}</p>
+                        <p className="text-sm">{internship.duration}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 text-gray-600">
                       <Pin className="h-5 w-5" />
                       <div>
-                        <p className="text-sm font-medium">Location</p>
+                        <p className="text-sm font-medium">{t("home.fields.location")}</p>
                         <p className="text-sm">{internship.location}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2 text-gray-600">
                       <DollarSign className="h-5 w-5" />
                       <div>
-                        <p className="text-sm font-medium">Stipend</p>
+                        <p className="text-sm font-medium">{t("home.fields.stipend")}</p>
                         <p className="text-sm">{internship.stipend}</p>
                       </div>
                     </div>
@@ -246,7 +253,7 @@ const index = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                        Internship
+                        {t("opportunities.heading_internships")}
                       </span>
                       <div className="flex items-center space-x-1 text-green-600">
                         <Clock className="h-4 w-4" />
@@ -255,9 +262,9 @@ const index = () => {
                     </div>
                     <Link
                       href={`/detailiternship/${internship._id}`}
-                      className="text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-blue-600 hover:text-blue-700 font-semibold"
                     >
-                      View Details
+                      {t("home.buttons.view_details")}
                     </Link>
                   </div>
                 </div>

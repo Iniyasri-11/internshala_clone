@@ -1,294 +1,363 @@
-import { selectuser } from "@/Feature/Userslice";
-import axios from "axios";
-import {
-  ArrowUpRight,
-  Calendar,
-  Clock,
-  DollarSign,
-  ExternalLink,
-  MapPin,
-  X,
-} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { ArrowUpRight, Calendar, Check, Clock, DollarSign, MapPin, X, Sparkles } from "lucide-react";
+import { api } from "@/utils/api";
 import { toast } from "react-toastify";
-// export const internships = [
-//   {
-//     _id: "1",
-//     title: "Frontend Developer Intern",
-//     company: "Tech Innovators",
-//     location: "Remote",
-//     stipend: "$500/month",
-//     Duration: "3 Months",
-//     StartDate: "March 15, 2025",
-//     aboutCompany:
-//       "Tech Innovators is a leading software development company specializing in modern web applications.",
-//     aboutJob:
-//       "As a Frontend Developer Intern, you will work on real-world projects using React.js and Tailwind CSS.",
-//     Whocanapply:
-//       "Students and fresh graduates with knowledge of HTML, CSS, JavaScript, and React.js.",
-//     perks: "Certificate, Letter of Recommendation, Flexible Work Hours",
-//     AdditionalInfo: "This is a remote internship with flexible working hours.",
-//     numberOfopning: "2",
-//   },
-//   {
-//     _id: "2",
-//     title: "Backend Developer Intern",
-//     company: "Cloud Systems",
-//     location: "San Francisco",
-//     stipend: "$800/month",
-//     Duration: "4 Months",
-//     StartDate: "April 1, 2025",
-//     aboutCompany:
-//       "Cloud Systems focuses on scalable backend solutions and cloud-based applications.",
-//     aboutJob:
-//       "As a Backend Developer Intern, you will work with Node.js, Express, and MongoDB.",
-//     Whocanapply:
-//       "Students with experience in backend technologies and databases.",
-//     perks: "Certificate, Networking Opportunities, Paid Internship",
-//     AdditionalInfo: "A strong foundation in databases is required.",
-//     numberOfopning: "3",
-//   },
-//   {
-//     _id: "3",
-//     title: "UI/UX Designer Intern",
-//     company: "Creative Minds",
-//     location: "New York",
-//     stipend: "$600/month",
-//     Duration: "6 Months",
-//     StartDate: "May 10, 2025",
-//     aboutCompany:
-//       "Creative Minds is a design agency focused on user experience and interface design.",
-//     aboutJob:
-//       "As a UI/UX Designer Intern, you will work with Figma, Adobe XD, and design systems.",
-//     Whocanapply:
-//       "Students passionate about designing intuitive user experiences.",
-//     perks: "Mentorship, Hands-on Projects, Letter of Recommendation",
-//     AdditionalInfo: "A portfolio is required for application.",
-//     numberOfopning: "1",
-//   },
-// ];
+import { useSelector } from "react-redux";
+import { selectuser } from "@/Feature/Userslice";
 
 const index = () => {
+  const user = useSelector(selectuser);
   const router = useRouter();
   const { id } = router.query;
-  const [internshipData,setinternship]=useState<any>([])
-  useEffect(()=>{
-    const fetchdata=async()=>{
+  const [internshipData, setInternshipData] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [availability, setAvailability] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<any>(null);
+  const [hasApplied, setHasApplied] = useState(false);
+
+  useEffect(() => {
+    const fetchInternship = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      setFetchError(null);
       try {
-        const res=await axios.get( `https://internshala-clone-y2p2.onrender.com/api/internship/${id}`)     
-        setinternship(res.data)
+        const res = await api.get(`/internship/${id}`);
+        setInternshipData(res.data || null);
+
+        if (user) {
+          try {
+            const appsRes = await api.get("/application/user");
+            const appliedList = appsRes.data || [];
+            const matches = appliedList.some((app: any) => app.internshipId === id || app.Application === id);
+            setHasApplied(matches);
+          } catch (appErr) {
+            console.error("Error fetching user applications", appErr);
+          }
+        }
       } catch (error) {
-        console.log(error)
+        console.error(error);
+        setFetchError("Unable to load internship details.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchInternship();
+  }, [id, user]);
+
+  const createdAt = internshipData?.createAt || internshipData?.createdAt || new Date().toISOString();
+
+  const handleSubmitApplication = async () => {
+    if (!coverLetter.trim()) {
+      toast.error("Please write a cover letter.");
+      return;
+    }
+    if (!availability) {
+      toast.error("Please select your availability.");
+      return;
+    }
+    try {
+      const applicationData = {
+        category: internshipData?.category,
+        company: internshipData?.company,
+        coverLetter,
+        user,
+        Application: id,
+        availability,
+      };
+      await api.post("/application", applicationData);
+      toast.success("Application submitted successfully.");
+      setHasApplied(true);
+      router.push("/internship");
+    } catch (error: any) {
+      console.error(error);
+      if (error?.response?.status === 403 && error?.response?.data?.error?.includes("limit exceeded")) {
+        setLimitInfo({
+          currentPlan: error.response.data.currentPlan || "Free",
+          applicationsRemaining: error.response.data.applicationsRemaining ?? 0,
+        });
+        setIsModalOpen(false);
+        setShowUpgradeModal(true);
+      } else {
+        toast.error(error?.response?.data?.error || "Failed to submit application.");
       }
     }
-    fetchdata()
-  },[id])
-  const [availability, setAvailability] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [coverLetter, setCoverLetter] = useState("");
-  const user=useSelector(selectuser)
-  if (!internshipData) {
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
-  const handlesubmitapplication=async()=>{
-    if(!coverLetter.trim()){
-      toast.error("please write a cover letter")
-      return
-    }
-    if(!availability){
-      toast.error("please select your availability")
-      return
-    }
-    try {
-      const applicationdata={
-        category:internshipData.category,
-        company:internshipData.company,
-        coverLetter:coverLetter,
-        user:user,
-        Application:id,
-        availability
-      }
-      await axios.post("https://internshala-clone-y2p2.onrender.com/api/application",applicationdata)
-      toast.success("Application submit successfully")
-      router.push('/internship')
-    } catch (error) {
-      console.error(error)
-      toast.error("Failed to submit application")
-    }
-  }
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Header Section */}
-        <div className="p-6 border-b">
-          <div className="flex items-center space-x-2 text-blue-600 mb-4">
-            <ArrowUpRight className="h-5 w-5" />
-            <span className="font-medium">Actively Hiring</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {internshipData.title}
-          </h1>
-          <p className="text-lg text-gray-600 mb-4">{internshipData.company}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center space-x-2 text-gray-600">
-              <MapPin className="h-5 w-5" />
-              <span>{internshipData.location}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <DollarSign className="h-5 w-5" />
-              <span>{internshipData.stipend}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <Calendar className="h-5 w-5" />
-              <span>{internshipData.startDate}</span>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-green-500" />
-            <span className="text-green-500 text-sm">
-              Posted on {internshipData.createdAt}
-            </span>
-          </div>
-        </div>
-        {/* Company Section */}
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            About {internshipData.company}
-          </h2>
-          <div className="flex items-center space-x-2 mb-4">
-            <a
-              href="#"
-              className="text-blue-600 hover:text-blue-700 flex items-center space-x-1"
-            >
-              <span>Visit company website</span>
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          </div>
-          <p className="text-gray-600">{internshipData.aboutCompany}</p>
-        </div>
-        {/* Internship Details Section */}
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            About the Internship
-          </h2>
-          <p className="text-gray-600 mb-6">{internshipData.aboutInternship}</p>
 
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Who can apply
-          </h3>
-          <p className="text-gray-600 mb-6">{internshipData.whoCanApply}</p>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Perks</h3>
-          <p className="text-gray-600 mb-6">{internshipData.perks}</p>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Additional Information
-          </h3>
-          <p className="text-gray-600 mb-6">{internshipData.additionalInfo}</p>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Number of Openings
-          </h3>
-          <p className="text-gray-600">{internshipData.numberOfOpening}</p>
-        </div>
-        {/* Apply Button */}
-        <div className="p-6 flex justify-center">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-150"
-          >
-            Apply Now
-          </button>
+  if (fetchError || !internshipData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-white p-8 rounded-3xl shadow-lg text-center">
+          <p className="text-lg font-semibold text-gray-900">{fetchError || "Internship not found."}</p>
+          <Link href="/internship" className="mt-4 inline-flex px-5 py-3 bg-blue-600 text-white rounded-full">
+            Back to internships
+          </Link>
         </div>
       </div>
-      {/* Apply Modal */}
+    );
+  }
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Apply to {internshipData.company}
-                </h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[3fr_1.2fr] gap-8">
+        <main className="bg-white rounded-3xl shadow-lg overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <div className="flex items-center gap-3 text-blue-600 mb-4">
+              <ArrowUpRight className="h-5 w-5" />
+              <span className="font-semibold">Actively Hiring</span>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{internshipData?.title}</h1>
+            <p className="text-lg text-gray-600 mb-4">{internshipData?.company}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                <span>{internshipData?.location || "Location not specified"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                <span>{internshipData?.stipend || internshipData?.Stipend || "Stipend not specified"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                <span>{internshipData?.startDate || internshipData?.StartDate || "Start date not specified"}</span>
               </div>
             </div>
-            <div className="p-6 space-y-6">
-              {/* Resume Section */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Your Resume
-                </h3>
-                <p className="text-gray-600">
-                  Your current resume will be submitted with the application
-                </p>
+            <div className="mt-4 flex items-center gap-2 text-sm text-green-500">
+              <Clock className="h-4 w-4" />
+              <span>Posted on {new Date(createdAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+
+          <div className="p-8 space-y-10">
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">About the company</h2>
+                  <p className="text-sm text-gray-500">Get to know the company behind this internship.</p>
+                </div>
+                <span className="text-sm text-gray-500">{internshipData?.category || "General"}</span>
               </div>
+              <p className="text-gray-600 leading-7">{internshipData?.aboutCompany || "No company description available."}</p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">About the internship</h2>
+              <p className="text-gray-600 leading-7">{internshipData?.aboutInternship || internshipData?.aboutJob || "No internship description available."}</p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Who can apply</h2>
+              <p className="text-gray-600 leading-7">{internshipData?.whoCanApply || internshipData?.Whocanapply || "Students and fresh graduates are welcome to apply."}</p>
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-2">
+              <div className="bg-gray-50 rounded-3xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Internship details</h3>
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">Duration:</span>
+                    <span>{internshipData?.Duration || internshipData?.duration || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">Openings:</span>
+                    <span>{internshipData?.numberOfOpening || internshipData?.numberOfopning || "Not specified"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold">Stipend:</span>
+                    <span>{internshipData?.stipend || internshipData?.Stipend || "Not specified"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-3xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Perks</h3>
+                {Array.isArray(internshipData?.perks) && internshipData?.perks.length ? (
+                  <ul className="space-y-2 text-gray-600">
+                    {internshipData?.perks.map((perk: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span>{perk}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">{internshipData?.perks || "No perks specified."}</p>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Additional information</h2>
+              <p className="text-gray-600 leading-7">{internshipData?.additionalInfo || internshipData?.AdditionalInfo || "No additional information available."}</p>
+            </section>
+          </div>
+        </main>
+
+        <aside className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Internship snapshot</h2>
+            <div className="space-y-4 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>Company</span>
+                <strong>{internshipData?.company}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Stipend</span>
+                <strong>{internshipData?.stipend || internshipData?.Stipend || "N/A"}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Duration</span>
+                <strong>{internshipData?.Duration || internshipData?.duration || "N/A"}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Posted on</span>
+                <strong>{new Date(createdAt).toLocaleDateString()}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Apply for this internship</h2>
+            {hasApplied ? (
+              <button
+                disabled
+                className="w-full bg-gray-400 text-white py-3 rounded-2xl cursor-not-allowed transition"
+              >
+                Already Applied
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full bg-blue-600 text-white py-3 rounded-2xl hover:bg-blue-700 transition cursor-pointer"
+              >
+                Apply Now
+              </button>
+            )}
+            <p className="mt-3 text-sm text-gray-500">Please login to apply. Your resume and cover letter will be shared with the recruiter.</p>
+          </div>
+        </aside>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 p-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Cover Letter
-                </h3>
-                <p className="text-gray-600 mb-2">
-                  Why should you be selected for this internship?
-                </p>
+                <h3 className="text-2xl font-semibold text-gray-900">Apply to {internshipData?.company}</h3>
+                <p className="text-sm text-gray-500">Submit your application for this internship.</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
-                  className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
-                  placeholder="Write your cover letter here..."
-                ></textarea>
+                  rows={6}
+                  className="w-full rounded-3xl border border-gray-200 p-4 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Tell the recruiter why you'd be a great fit for this internship."
+                />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Your Availability
-                </h3>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
                 <div className="space-y-3">
-                  {[
-                    "Yes, I am available to join immediately",
-                    "No, I am currently on notice period",
-                    "No, I will have to serve notice period",
-                    "Other",
-                  ].map((option) => (
-                    <label key={option} className="flex items-center space-x-2">
+                  {["Yes, I am available to join immediately", "No, I am currently on notice period", "No, I will have to serve notice period", "Other"].map((option) => (
+                    <label key={option} className="flex items-center gap-3 text-gray-700">
                       <input
                         type="radio"
-                        name=""
-                        id=""
+                        name="availability"
                         value={option}
                         checked={availability === option}
                         onChange={(e) => setAvailability(e.target.value)}
                         className="h-4 w-4 text-blue-600"
                       />
-                      <span className="text-gray-700">{option}</span>
+                      <span>{option}</span>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-3xl border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
                 {user ? (
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700" onClick={handlesubmitapplication}>
-                    Submit Application
+                  <button
+                    type="button"
+                    onClick={handleSubmitApplication}
+                    className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+                  >
+                    Submit application
                   </button>
                 ) : (
-                  <Link
-                    href={`/`}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Sign up to apply
+                  <Link href="/auth/login" className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700">
+                    Sign in to apply
                   </Link>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpgradeModal && limitInfo && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center">
+            <div className="flex justify-end">
+              <button onClick={() => setShowUpgradeModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mt-2 flex flex-col items-center">
+              <div className="p-3 bg-red-50 text-red-500 rounded-full mb-4">
+                <Sparkles className="h-10 w-10 text-red-500 animate-pulse" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Limit Exceeded</h3>
+              <p className="mt-3 text-gray-600">
+                You have reached the monthly application limit for your current plan.
+              </p>
+              <div className="mt-5 w-full bg-slate-50 rounded-2xl p-4 space-y-2 text-sm text-gray-700 text-left border border-slate-100">
+                <div className="flex justify-between">
+                  <span>Current Plan</span>
+                  <span className="font-semibold text-slate-900">{limitInfo.currentPlan}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Applications Remaining</span>
+                  <span className="font-semibold text-red-600">{limitInfo.applicationsRemaining}</span>
+                </div>
+              </div>
+              <div className="mt-6 w-full flex flex-col gap-3">
+                <Link
+                  href="/subscription"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-2xl transition shadow-lg inline-block text-center"
+                >
+                  Upgrade Plan
+                </Link>
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-2xl transition"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

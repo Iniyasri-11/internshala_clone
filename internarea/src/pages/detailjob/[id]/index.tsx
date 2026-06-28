@@ -3,339 +3,373 @@ import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
 import {
   ArrowUpRight,
-  Book,
   Calendar,
-  Cat,
+  Check,
   Clock,
   DollarSign,
-  ExternalLink,
   MapPin,
   X,
+  Briefcase,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
-import axios from "axios";
+import { api } from "@/utils/api";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
-// const filteredJobs = [
-//     {
-//       _id: "101",
-//       title: "Frontend Developer",
-//       company: "Amazon",
-//       location: "Seattle",
-//       CTC: "$100K/year",
-//       Experience: "2+ years",
-//       category: "Engineering",
-//       StartDate: "April 1, 2025",
-//       aboutCompany:
-//         "Amazon is a global leader in e-commerce and cloud computing, providing cutting-edge technology solutions.",
-//       aboutJob:
-//         "Seeking a skilled Frontend Developer proficient in React.js, JavaScript, and UI development.",
-//       Whocanapply:
-//         "Developers with experience in JavaScript, React.js, and modern frontend frameworks.",
-//       perks:
-//         "Remote work, stock options, health insurance, learning resources.",
-//       AdditionalInfo: "This role is hybrid with occasional onsite meetings.",
-//       numberOfopning: "3",
-//     },
-//     {
-//       _id: "102",
-//       title: "Data Analyst",
-//       company: "Microsoft",
-//       location: "Remote",
-//       CTC: "$90K/year",
-//       Experience: "1+ years",
-//       category: "Data Science",
-//       StartDate: "March 15, 2025",
-//       aboutCompany:
-//         "Microsoft is a technology company specializing in software development, cloud computing, and AI.",
-//       aboutJob:
-//         "Looking for a Data Analyst with expertise in SQL, Python, and data visualization tools.",
-//       Whocanapply:
-//         "Candidates with experience in data analytics, SQL, Python, and Tableau/Power BI.",
-//       perks: "Flexible hours, remote work, upskilling programs, bonuses.",
-//       AdditionalInfo: "This is a fully remote role.",
-//       numberOfopning: "2",
-//     },
-//     {
-//       _id: "103",
-//       title: "UX Designer",
-//       company: "Apple",
-//       location: "California",
-//       CTC: "$110K/year",
-//       Experience: "3+ years",
-//       category: "Design",
-//       StartDate: "March 30, 2025",
-//       aboutCompany:
-//         "Apple is a leader in consumer electronics and software, focusing on design and innovation.",
-//       aboutJob:
-//         "Seeking a UX Designer to craft intuitive user experiences for our next-generation products.",
-//       Whocanapply:
-//         "Designers with experience in Figma, Adobe XD, user research, and usability testing.",
-//       perks:
-//         "Creative environment, free lunches, fitness perks, flexible hours.",
-//       AdditionalInfo: "Office-based with occasional remote work options.",
-//       numberOfopning: "1",
-//     },
-//     {
-//       _id: "104",
-//       title: "Backend Developer",
-//       company: "NextGen Solutions",
-//       location: "Austin, TX",
-//       CTC: "$90,000 - $110,000",
-//       Experience: "3-5 years",
-//       category: "Engineering",
-//       StartDate: "March 20, 2025",
-//       aboutCompany:
-//         "NextGen Solutions specializes in building scalable backend systems and APIs for high-performance applications.",
-//       aboutJob:
-//         "Looking for a Backend Developer skilled in Node.js, Express.js, and database management.",
-//       Whocanapply:
-//         "Developers with experience in server-side programming, databases (SQL, NoSQL), and RESTful APIs.",
-//       perks: "Stock options, remote work, gym membership, yearly bonuses.",
-//       AdditionalInfo: "Hybrid role with 2 days of in-office meetings per week.",
-//       numberOfopning: "3",
-//     },
-//     {
-//       _id: "105",
-//       title: "UI/UX Designer",
-//       company: "Design Pro",
-//       location: "San Francisco, CA",
-//       CTC: "$70,000 - $85,000",
-//       Experience: "2+ years",
-//       category: "Design",
-//       StartDate: "March 25, 2025",
-//       aboutCompany:
-//         "Design Pro is an award-winning UI/UX design agency focusing on innovative user experiences.",
-//       aboutJob:
-//         "We need a UI/UX Designer who can create user-friendly interfaces and improve the user experience of our applications.",
-//       Whocanapply:
-//         "Designers with proficiency in Figma, Adobe XD, and user research methodologies.",
-//       perks:
-//         "Creative workspace, wellness programs, free team lunches, flexible hours.",
-//       AdditionalInfo: "Office-based with flexible working hours.",
-//       numberOfopning: "1",
-//     },
-//   ];
+
 const index = () => {
-  const user=useSelector(selectuser)
+  const user = useSelector(selectuser);
   const router = useRouter();
   const { id } = router.query;
-  const [jobdata, setjob] = useState<any>([]);
+  const [jobData, setJobData] = useState<any | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [availability, setAvailability] = useState("");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [limitInfo, setLimitInfo] = useState<any>(null);
+  const [hasApplied, setHasApplied] = useState(false);
+
   useEffect(() => {
-    const fetchdata = async () => {
+    const fetchJob = async () => {
+      if (!id) return;
+      setIsLoading(true);
+      setFetchError(null);
       try {
-        const res = await axios.get(`https://internshala-clone-y2p2.onrender.com/api/job/${id}`);
-        setjob(res.data);
+        const res = await api.get(`/job/${id}`);
+        setJobData(res.data || null);
+
+        if (user) {
+          try {
+            const appsRes = await api.get("/application/user");
+            const appliedList = appsRes.data || [];
+            const matches = appliedList.some((app: any) => app.internshipId === id || app.Application === id);
+            setHasApplied(matches);
+          } catch (appErr) {
+            console.error("Error fetching user applications", appErr);
+          }
+        }
       } catch (error) {
-        console.log(error);
+        console.error(error);
+        setFetchError("Unable to load job details.");
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchdata();
-  }, [id]);
 
-  const [availability, setAvailability] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [coverLetter, setCoverLetter] = useState("");
-  if (!jobdata) {
+    fetchJob();
+  }, [id, user]);
+
+  const createdAt = jobData?.createAt || jobData?.createdAt || new Date().toISOString();
+
+  const handleSubmitApplication = async () => {
+    if (!coverLetter.trim()) {
+      toast.error("Please write a cover letter.");
+      return;
+    }
+    if (!availability) {
+      toast.error("Please select your availability.");
+      return;
+    }
+
+    try {
+      const applicationData = {
+        category: jobData?.category,
+        company: jobData?.company,
+        coverLetter,
+        user,
+        Application: id,
+        availability,
+      };
+      await api.post("/application", applicationData);
+      toast.success("Application submitted successfully.");
+      setHasApplied(true);
+      router.push("/job");
+    } catch (error: any) {
+      console.error(error);
+      if (error?.response?.status === 403 && error?.response?.data?.error?.includes("limit exceeded")) {
+        setLimitInfo({
+          currentPlan: error.response.data.currentPlan || "Free",
+          applicationsRemaining: error.response.data.applicationsRemaining ?? 0,
+        });
+        setIsModalOpen(false);
+        setShowUpgradeModal(true);
+      } else {
+        toast.error(error?.response?.data?.error || "Failed to submit application.");
+      }
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
-  const handlesubmitapplication = async () => {
-    if (!coverLetter.trim()) {
-      toast.error("please write a cover letter");
-      return;
-    }
-    if (!availability) {
-      toast.error("please select your availability");
-      return;
-    }
-    try {
-      const applicationdata = {
-        category: jobdata.category,
-        company: jobdata.company,
-        coverLetter: coverLetter,
-        user: user,
-        Application: id,
-        availability,
-      };
-      await axios.post(
-        "https://internshala-clone-y2p2.onrender.com/api/application",
-        applicationdata
-      );
-      toast.success("Application submit successfully");
-      router.push("/job");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to submit application");
-    }
-  };
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        {/* Header Section */}
-        <div className="p-6 border-b">
-          <div className="flex items-center space-x-2 text-blue-600 mb-4">
-            <ArrowUpRight className="h-5 w-5" />
-            <span className="font-medium">Actively Hiring</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {jobdata.title}
-          </h1>
-          <p className="text-lg text-gray-600 mb-4">{jobdata.company}</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center space-x-2 text-gray-600">
-              <MapPin className="h-5 w-5" />
-              <span>{jobdata.location}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <DollarSign className="h-5 w-5" />
-              <span>CTC {jobdata.CTC}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-gray-600">
-              <Book className="h-5 w-5" />
-              <span>{jobdata.category}</span>
-            </div>
-          </div>
-          <div className="mt-4 flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-green-500" />
-            <span className="text-green-500 text-sm">
-              Posted on {jobdata.createAt}
-            </span>
-          </div>
-        </div>
-        {/* Company Section */}
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            About {jobdata.company}
-          </h2>
-          <div className="flex items-center space-x-2 mb-4">
-            <a
-              href="#"
-              className="text-blue-600 hover:text-blue-700 flex items-center space-x-1"
-            >
-              <span>Visit company website</span>
-              <ExternalLink className="h-4 w-4" />
-            </a>
-          </div>
-          <p className="text-gray-600">{jobdata.aboutCompany}</p>
-        </div>
-        {/* Internship Details Section */}
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">
-            About the Internship
-          </h2>
-          <p className="text-gray-600 mb-6">{jobdata.aboutJob}</p>
 
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Who can apply
-          </h3>
-          <p className="text-gray-600 mb-6">{jobdata.whoCanApply}</p>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Perks</h3>
-          <p className="text-gray-600 mb-6">{jobdata.perks}</p>
-
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Additional Information
-          </h3>
-          <p className="text-gray-600 mb-6">{jobdata.AdditionalInfo}</p>
-        </div>
-        {/* Apply Button */}
-        <div className="p-6 flex justify-center">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-150"
-          >
-            Apply Now
-          </button>
+  if (fetchError || !jobData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-white p-8 rounded-3xl shadow-lg text-center">
+          <p className="text-lg font-semibold text-gray-900">{fetchError || "Job not found."}</p>
+          <Link href="/job" className="mt-4 inline-flex px-5 py-3 bg-blue-600 text-white rounded-full">
+            Back to jobs
+          </Link>
         </div>
       </div>
-      {/* Apply Modal */}
+    );
+  }
 
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Apply to {jobdata.company}
-                </h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+  return (
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-8">
+        <main className="bg-white rounded-3xl shadow-lg overflow-hidden">
+          <div className="p-8 border-b border-gray-100">
+            <div className="flex items-center gap-3 text-blue-600 mb-4">
+              <ArrowUpRight className="h-5 w-5" />
+              <span className="font-semibold">Actively Recruiting</span>
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">{jobData?.title}</h1>
+            <p className="text-xl text-gray-600 mb-4">{jobData?.company}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                <span>{jobData?.location || "Location not specified"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                <span>{jobData?.CTC ? `CTC ${jobData.CTC}` : "CTC not specified"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                <span>{jobData?.StartDate || new Date(createdAt).toLocaleDateString()}</span>
               </div>
             </div>
-            <div className="p-6 space-y-6">
-              {/* Resume Section */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Your Resume
-                </h3>
-                <p className="text-gray-600">
-                  Your current resume will be submitted with the application
-                </p>
+          </div>
+
+          <div className="p-8 space-y-10">
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-900">About the company</h2>
+                  <p className="text-sm text-gray-500">Learn what makes this company unique.</p>
+                </div>
+                <span className="text-sm text-gray-500">{jobData?.category || "General"}</span>
               </div>
+              <p className="text-gray-600 leading-7">{jobData?.aboutCompany || "No company description available."}</p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">About the role</h2>
+              <p className="text-gray-600 leading-7">{jobData?.aboutJob || "No role description available."}</p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Who can apply</h2>
+              <p className="text-gray-600 leading-7">{jobData?.whoCanApply || jobData?.Whocanapply || "Any eligible candidate may apply."}</p>
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-2">
+              <div className="bg-gray-50 rounded-3xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Job details</h3>
+                <div className="space-y-3 text-sm text-gray-700">
+                  <div className="flex items-center gap-3">
+                    <Briefcase className="h-4 w-4 text-blue-600" />
+                    <span>{jobData?.category || "Category not specified"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-4 w-4 text-green-600" />
+                    <span>{jobData?.Experience || "Experience not specified"}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <ShieldCheck className="h-4 w-4 text-indigo-600" />
+                    <span>{jobData?.partTime ? "Part-time" : "Full-time"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-gray-50 rounded-3xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Perks</h3>
+                {Array.isArray(jobData?.perks) && jobData?.perks.length ? (
+                  <ul className="space-y-2 text-gray-600">
+                    {jobData?.perks.map((perk: string, index: number) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span>{perk}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-600">{typeof jobData?.perks === "string" ? jobData.perks : "No perks specified."}</p>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Additional information</h2>
+              <p className="text-gray-600 leading-7">{jobData?.AdditionalInfo || jobData?.additionalInfo || "No additional information available."}</p>
+            </section>
+          </div>
+        </main>
+
+        <aside className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Application details</h2>
+            <div className="space-y-4 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>Company</span>
+                <strong>{jobData?.company}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>CTC</span>
+                <strong>{jobData?.CTC || "N/A"}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Experience</span>
+                <strong>{jobData?.Experience || "N/A"}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Posted on</span>
+                <strong>{new Date(createdAt).toLocaleDateString()}</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Category</span>
+                <strong>{jobData?.category || "N/A"}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Apply for this job</h2>
+            {hasApplied ? (
+              <button
+                disabled
+                className="w-full bg-gray-400 text-white py-3 rounded-2xl cursor-not-allowed transition"
+              >
+                Already Applied
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full bg-blue-600 text-white py-3 rounded-2xl hover:bg-blue-700 transition cursor-pointer"
+              >
+                Apply Now
+              </button>
+            )}
+            <p className="mt-3 text-sm text-gray-500">Please login before applying. Your resume will be submitted along with your application.</p>
+          </div>
+        </aside>
+      </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 p-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Cover Letter
-                </h3>
-                <p className="text-gray-600 mb-2">
-                  Why should you be selected for this internship?
-                </p>
+                <h3 className="text-2xl font-semibold text-gray-900">Apply to {jobData?.company}</h3>
+                <p className="text-sm text-gray-500">Complete your application and submit your cover letter.</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
-                  className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 text-black"
-                  placeholder="Write your cover letter here..."
-                ></textarea>
+                  rows={6}
+                  className="w-full rounded-3xl border border-gray-200 p-4 text-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Tell the recruiter why you'd be a great fit for this role."
+                />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Your Availability
-                </h3>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
                 <div className="space-y-3">
-                  {[
-                    "Yes, I am available to join immediately",
-                    "No, I am currently on notice period",
-                    "No, I will have to serve notice period",
-                    "Other",
-                  ].map((option) => (
-                    <label key={option} className="flex items-center space-x-2">
+                  {["Available immediately", "Available after notice period", "Available in 1 month", "Other"].map((option) => (
+                    <label key={option} className="flex items-center gap-3 text-gray-700">
                       <input
                         type="radio"
-                        name=""
-                        id=""
+                        name="availability"
                         value={option}
                         checked={availability === option}
                         onChange={(e) => setAvailability(e.target.value)}
                         className="h-4 w-4 text-blue-600"
                       />
-                      <span className="text-gray-700">{option}</span>
+                      <span>{option}</span>
                     </label>
                   ))}
                 </div>
               </div>
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="rounded-3xl border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
                 {user ? (
                   <button
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                    onClick={handlesubmitapplication}
+                    type="button"
+                    onClick={handleSubmitApplication}
+                    className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
                   >
-                    Submit Application
+                    Submit application
                   </button>
                 ) : (
-                  <Link
-                    href={`/`}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                  >
-                    Sign up to apply
+                  <Link href="/auth/login" className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700">
+                    Sign in to apply
                   </Link>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpgradeModal && limitInfo && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center">
+            <div className="flex justify-end">
+              <button onClick={() => setShowUpgradeModal(false)} className="text-gray-400 hover:text-gray-700">
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mt-2 flex flex-col items-center">
+              <div className="p-3 bg-red-50 text-red-500 rounded-full mb-4">
+                <Sparkles className="h-10 w-10 text-red-500 animate-pulse" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">Limit Exceeded</h3>
+              <p className="mt-3 text-gray-600">
+                You have reached the monthly application limit for your current plan.
+              </p>
+              <div className="mt-5 w-full bg-slate-50 rounded-2xl p-4 space-y-2 text-sm text-gray-700 text-left border border-slate-100">
+                <div className="flex justify-between">
+                  <span>Current Plan</span>
+                  <span className="font-semibold text-slate-900">{limitInfo.currentPlan}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Applications Remaining</span>
+                  <span className="font-semibold text-red-600">{limitInfo.applicationsRemaining}</span>
+                </div>
+              </div>
+              <div className="mt-6 w-full flex flex-col gap-3">
+                <Link
+                  href="/subscription"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-2xl transition shadow-lg inline-block text-center"
+                >
+                  Upgrade Plan
+                </Link>
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-2xl transition"
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>

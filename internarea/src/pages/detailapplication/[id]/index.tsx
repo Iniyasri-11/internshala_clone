@@ -1,4 +1,4 @@
-import axios from "axios";
+import { api } from "@/utils/api";
 import { Building2, Calendar, FileText, Loader2, User } from "lucide-react";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
@@ -12,9 +12,7 @@ const index = () => {
     const fetchdata = async () => {
       try {
         setloading(true);
-        const res = await axios.get(
-          `https://internshala-clone-y2p2.onrender.com/api/application/${id}`
-        );
+        const res = await api.get(`/application/${id}`);
         console.log(res.data);
         setdata(res.data);
       } catch (error) {

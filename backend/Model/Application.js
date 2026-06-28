@@ -3,7 +3,14 @@ const Applicationipschema = new mongoose.Schema({
   company: String,
   category: String,
   coverLetter: String,
+  availability: String,
   user: Object,
+  userId: String,
+  internshipId: String,
+  appliedAt: {
+    type: Date,
+    default: Date.now,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

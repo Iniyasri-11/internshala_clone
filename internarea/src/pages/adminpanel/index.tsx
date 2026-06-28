@@ -5,7 +5,8 @@ import {
   Send,
   Users,
   BarChart,
-  Settings
+  Settings,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 const index = () => {
@@ -44,6 +45,13 @@ const index = () => {
           icon: Users,
           link: '/users',
           color: 'bg-orange-600',
+        },
+        {
+          title: 'Subscription Management',
+          description: 'Adjust user plans, view payments, and process refunds',
+          icon: CreditCard,
+          link: '/adminpanel/subscriptions',
+          color: 'bg-indigo-600',
         },
         {
           title: 'Analytics',

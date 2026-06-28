@@ -9,7 +9,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
+import { api } from "@/utils/api";
 import { selectuser } from "@/Feature/Userslice";
 import { useSelector } from "react-redux";
 const Applications = [
@@ -63,7 +63,7 @@ const index = () => {
   useEffect(() => {
     const fetchdata = async () => {
       try {
-        const res = await axios.get("https://internshala-clone-y2p2.onrender.com/api/application");
+        const res = await api.get("/application");
         setdata(res.data);
       } catch (error) {
         console.log(error);
