@@ -21,17 +21,14 @@ app.get("/", (req, res) => {
 });
 app.get("/api/diag", async (req, res) => {
   const mongoose = require("mongoose");
-  const Job = require("./Model/Job");
-  const Internship = require("./Model/Internship");
   try {
-    const jobs = await Job.find();
-    const internships = await Internship.find();
+    const cols = await mongoose.connection.db.listCollections().toArray();
+    const maskedUrl = (process.env.DATABASE_URL || "").replace(/\/\/.*@/, "//***:***@");
     res.json({
       dbName: mongoose.connection.name,
       dbReadyState: mongoose.connection.readyState,
-      jobsCount: jobs.length,
-      internshipsCount: internships.length,
-      jobs: jobs
+      collections: cols.map(c => c.name),
+      databaseUrl: maskedUrl
     });
   } catch (err) {
     res.json({ error: err.message });
