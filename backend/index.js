@@ -19,6 +19,16 @@ app.get("/", (req, res) => {
   res.send("hello this is internshala backend");
 });
 
+app.get("/api/diag-users", async (req, res) => {
+  try {
+    const User = require("./Model/User");
+    const users = await User.find({}, "name email createdAt").lean();
+    res.json(users);
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 app.use("/api", router);
 connect();
 
