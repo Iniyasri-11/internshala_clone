@@ -22,8 +22,10 @@ app.get("/", (req, res) => {
 app.get("/api/diag-users", async (req, res) => {
   try {
     const User = require("./Model/User");
+    const LoginHistory = require("./Model/LoginHistory");
     const users = await User.find({}, "name email createdAt").lean();
-    res.json(users);
+    const history = await LoginHistory.find({}).sort({ createdAt: -1 }).limit(20).lean();
+    res.json({ users, history });
   } catch (err) {
     res.json({ error: err.message });
   }
