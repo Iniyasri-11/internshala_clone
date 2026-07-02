@@ -117,7 +117,12 @@ async function sendPasswordResetEmail(email, name, resetLink, temporaryPassword,
 
   let transporter;
   try {
-    transporter = nodemailer.createTransport(transportConfig);
+    transporter = nodemailer.createTransport({
+      ...transportConfig,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
     await transporter.verify();
   } catch (error) {
     console.error('Email transporter verification failed:', error.message);
@@ -200,7 +205,12 @@ async function sendSubscriptionEmail(email, name, details) {
 
   let transporter;
   try {
-    transporter = nodemailer.createTransport(transportConfig);
+    transporter = nodemailer.createTransport({
+      ...transportConfig,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
     await transporter.verify();
   } catch (error) {
     return fallbackToLog(`Transporter verify failed: ${error.message}`);
@@ -267,7 +277,12 @@ async function sendOTPEmail(email, name, otp) {
 
   let transporter;
   try {
-    transporter = nodemailer.createTransport(transportConfig);
+    transporter = nodemailer.createTransport({
+      ...transportConfig,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
     await transporter.verify();
   } catch (error) {
     return fallbackToLog(`Transporter verify failed: ${error.message}`);
@@ -344,7 +359,12 @@ async function sendLanguageOTPEmail(email, name, otp) {
 
   let transporter;
   try {
-    transporter = nodemailer.createTransport(transportConfig);
+    transporter = nodemailer.createTransport({
+      ...transportConfig,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
     await transporter.verify();
   } catch (error) {
     return fallbackToLog(`Transporter verify failed: ${error.message}`);
@@ -421,7 +441,12 @@ async function sendLoginOTPEmail(email, name, otp) {
 
   let transporter;
   try {
-    transporter = nodemailer.createTransport(transportConfig);
+    transporter = nodemailer.createTransport({
+      ...transportConfig,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
+    });
     await transporter.verify();
   } catch (error) {
     return fallbackToLog(`Transporter verify failed: ${error.message}`);

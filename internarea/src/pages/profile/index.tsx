@@ -6,12 +6,16 @@ import { useSelector, useDispatch } from "react-redux";
 import { api } from "@/utils/api";
 import { auth } from "@/firebase/firebase";
 import { signOut } from "firebase/auth";
+import { useLanguage } from "@/context/LanguageContext";
+
 interface ProfileUser {
   name: string;
   email: string;
   photo: string;
 }
+
 const index = () => {
+  const { t } = useLanguage();
   const [applications, setApplications] = useState<any[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
   const [loginHistory, setLoginHistory] = useState<any[]>([]);
@@ -87,7 +91,7 @@ const index = () => {
         setLoginHistory(historyRes.data.history || []);
       } catch (error) {
         console.error("Failed to load dashboard data", error);
-        setFetchError("Unable to load your dashboard data right now.");
+        setFetchError(t("profile.load_error"));
         setApplications([]);
       } finally {
         setLoading(false);
@@ -97,12 +101,13 @@ const index = () => {
     fetchDashboardData();
   }, [user]);
 
-  const logout = async () => {
+  const logoutUser = async () => {
     try {
       await signOut(auth);
     } catch (error) {
       console.error("Logout failed", error);
     }
+    dispatch(login(null));
   };
 
   const recentApplications = applications.slice(0, 5);
@@ -111,7 +116,7 @@ const index = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t("navbar.login")}</h1>
           <p className="text-gray-600">
             You need to sign in to view your profile and application details.
           </p>
@@ -197,7 +202,7 @@ const index = () => {
                   <span className="text-blue-600 font-semibold text-2xl">
                     {applications.length}
                   </span>
-                  <p className="text-blue-600 text-sm mt-1">My Applications</p>
+                  <p className="text-blue-600 text-sm mt-1">{t("navbar.my_applications")}</p>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4 text-center">
                   <span className="text-green-600 font-semibold text-2xl">
@@ -210,7 +215,7 @@ const index = () => {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-indigo-50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-indigo-700">Current plan</p>
+                  <p className="text-sm text-indigo-700">{t("profile.active_plan")}</p>
                   <p className="mt-2 text-lg font-semibold text-gray-900">{subscription?.planName || 'Free'}</p>
                 </div>
                 <div className="bg-indigo-50 rounded-lg p-4 text-center">
@@ -315,7 +320,7 @@ const index = () => {
                         href="/profile/create-resume"
                         className="text-xs text-blue-600 font-semibold hover:text-blue-700 flex items-center gap-1"
                       >
-                        Edit Resume
+                        {t("profile.edit_resume")}
                       </Link>
                     </div>
                   </div>
@@ -329,7 +334,7 @@ const index = () => {
                       className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition shadow-md"
                     >
                       <Plus className="h-4 w-4" />
-                      Create Resume (₹50)
+                      {t("profile.create_resume")} (₹50)
                     </Link>
                   </div>
                 )}
@@ -338,7 +343,7 @@ const index = () => {
               <div className="bg-gray-50 rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Applied Jobs & Internships
+                    {t("profile.applications")}
                   </h2>
                   <span className="text-sm text-gray-500">{applications.length} total</span>
                 </div>
@@ -352,7 +357,7 @@ const index = () => {
                   </div>
                 ) : recentApplications.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
-                    No job or internship applications yet.
+                    {t("profile.no_applications")}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -383,7 +388,7 @@ const index = () => {
                           </span>
                         </div>
                         <div className="mt-3 text-sm text-gray-500">
-                          Applied on {application.createdAt ? new Date(application.createdAt).toLocaleDateString("en-US", {
+                          {t("profile.applied_on")} {application.createdAt ? new Date(application.createdAt).toLocaleDateString("en-US", {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
@@ -400,12 +405,12 @@ const index = () => {
                 <div className="flex items-center gap-2 mb-4">
                   <History className="h-5 w-5 text-blue-600" />
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Recent Login Activity
+                    {t("profile.login_activity")}
                   </h2>
                 </div>
                 {loginHistory.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
-                    No login history records found.
+                    {t("profile.no_history")}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -445,7 +450,7 @@ const index = () => {
                                   {log.browser} • {log.os}
                                 </h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                  IP: {log.ipAddress} | Device: <span className="capitalize">{log.deviceType}</span>
+                                  {t("profile.ip_address")}: {log.ipAddress} | {t("profile.device")}: <span className="capitalize">{log.deviceType}</span>
                                 </p>
                               </div>
                               <span

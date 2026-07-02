@@ -6,10 +6,12 @@ import { api } from "@/utils/api";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
+import { useLanguage } from "@/context/LanguageContext";
 
 const index = () => {
   const user = useSelector(selectuser);
   const router = useRouter();
+  const { t } = useLanguage();
   const { id } = router.query;
   const [internshipData, setInternshipData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +44,7 @@ const index = () => {
         }
       } catch (error) {
         console.error(error);
-        setFetchError("Unable to load internship details.");
+        setFetchError(t("details.not_found"));
       } finally {
         setIsLoading(false);
       }
@@ -55,11 +57,11 @@ const index = () => {
 
   const handleSubmitApplication = async () => {
     if (!coverLetter.trim()) {
-      toast.error("Please write a cover letter.");
+      toast.error(t("details.write_cover_letter"));
       return;
     }
     if (!availability) {
-      toast.error("Please select your availability.");
+      toast.error(t("details.select_availability"));
       return;
     }
     try {
@@ -72,7 +74,7 @@ const index = () => {
         availability,
       };
       await api.post("/application", applicationData);
-      toast.success("Application submitted successfully.");
+      toast.success(t("details.success_apply"));
       setHasApplied(true);
       router.push("/internship");
     } catch (error: any) {
@@ -102,9 +104,9 @@ const index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="bg-white p-8 rounded-3xl shadow-lg text-center">
-          <p className="text-lg font-semibold text-gray-900">{fetchError || "Internship not found."}</p>
+          <p className="text-lg font-semibold text-gray-900">{fetchError || t("details.not_found")}</p>
           <Link href="/internship" className="mt-4 inline-flex px-5 py-3 bg-blue-600 text-white rounded-full">
-            Back to internships
+            {t("details.back_to_internships")}
           </Link>
         </div>
       </div>
@@ -118,7 +120,7 @@ const index = () => {
           <div className="p-8 border-b border-gray-100">
             <div className="flex items-center gap-3 text-blue-600 mb-4">
               <ArrowUpRight className="h-5 w-5" />
-              <span className="font-semibold">Actively Hiring</span>
+              <span className="font-semibold">{t("details.actively_hiring")}</span>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{internshipData?.title}</h1>
             <p className="text-lg text-gray-600 mb-4">{internshipData?.company}</p>
@@ -138,7 +140,7 @@ const index = () => {
             </div>
             <div className="mt-4 flex items-center gap-2 text-sm text-green-500">
               <Clock className="h-4 w-4" />
-              <span>Posted on {new Date(createdAt).toLocaleDateString()}</span>
+              <span>{t("details.posted_on")} {new Date(createdAt).toLocaleDateString()}</span>
             </div>
           </div>
 
@@ -146,8 +148,8 @@ const index = () => {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">About the company</h2>
-                  <p className="text-sm text-gray-500">Get to know the company behind this internship.</p>
+                  <h2 className="text-2xl font-semibold text-gray-900">{t("details.about_company")}</h2>
+                  <p className="text-sm text-gray-500">{t("details.about_company_sub")}</p>
                 </div>
                 <span className="text-sm text-gray-500">{internshipData?.category || "General"}</span>
               </div>
@@ -155,35 +157,35 @@ const index = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">About the internship</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t("details.about_internship")}</h2>
               <p className="text-gray-600 leading-7">{internshipData?.aboutInternship || internshipData?.aboutJob || "No internship description available."}</p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Who can apply</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t("details.who_can_apply")}</h2>
               <p className="text-gray-600 leading-7">{internshipData?.whoCanApply || internshipData?.Whocanapply || "Students and fresh graduates are welcome to apply."}</p>
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">
               <div className="bg-gray-50 rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Internship details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("details.internship_details")}</h3>
                 <div className="space-y-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">Duration:</span>
+                    <span className="font-semibold">{t("home.fields.duration")}:</span>
                     <span>{internshipData?.Duration || internshipData?.duration || "Not specified"}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">Openings:</span>
+                    <span className="font-semibold">{t("details.openings")}:</span>
                     <span>{internshipData?.numberOfOpening || internshipData?.numberOfopning || "Not specified"}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">Stipend:</span>
+                    <span className="font-semibold">{t("home.fields.stipend")}:</span>
                     <span>{internshipData?.stipend || internshipData?.Stipend || "Not specified"}</span>
                   </div>
                 </div>
               </div>
               <div className="bg-gray-50 rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Perks</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("details.perks")}</h3>
                 {Array.isArray(internshipData?.perks) && internshipData?.perks.length ? (
                   <ul className="space-y-2 text-gray-600">
                     {internshipData?.perks.map((perk: string, index: number) => (
@@ -208,42 +210,42 @@ const index = () => {
 
         <aside className="space-y-6">
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Internship snapshot</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Snapshot</h2>
             <div className="space-y-4 text-sm text-gray-700">
               <div className="flex items-center justify-between">
                 <span>Company</span>
                 <strong>{internshipData?.company}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Stipend</span>
+                <span>{t("home.fields.stipend")}</span>
                 <strong>{internshipData?.stipend || internshipData?.Stipend || "N/A"}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Duration</span>
+                <span>{t("home.fields.duration")}</span>
                 <strong>{internshipData?.Duration || internshipData?.duration || "N/A"}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Posted on</span>
+                <span>{t("details.posted_on")}</span>
                 <strong>{new Date(createdAt).toLocaleDateString()}</strong>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Apply for this internship</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t("details.apply_modal_title")}</h2>
             {hasApplied ? (
               <button
                 disabled
                 className="w-full bg-gray-400 text-white py-3 rounded-2xl cursor-not-allowed transition"
               >
-                Already Applied
+                {t("details.already_applied")}
               </button>
             ) : (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="w-full bg-blue-600 text-white py-3 rounded-2xl hover:bg-blue-700 transition cursor-pointer"
               >
-                Apply Now
+                {t("details.apply_now")}
               </button>
             )}
             <p className="mt-3 text-sm text-gray-500">Please login to apply. Your resume and cover letter will be shared with the recruiter.</p>
@@ -256,8 +258,8 @@ const index = () => {
           <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 p-6">
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900">Apply to {internshipData?.company}</h3>
-                <p className="text-sm text-gray-500">Submit your application for this internship.</p>
+                <h3 className="text-2xl font-semibold text-gray-900">{t("details.apply_modal_title")}</h3>
+                <p className="text-sm text-gray-500">Submit your application to {internshipData?.company}.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">
                 <X className="h-6 w-6" />
@@ -265,7 +267,7 @@ const index = () => {
             </div>
             <div className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t("details.cover_letter_label")}</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
@@ -275,7 +277,7 @@ const index = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t("details.availability_label")}</label>
                 <div className="space-y-3">
                   {["Yes, I am available to join immediately", "No, I am currently on notice period", "No, I will have to serve notice period", "Other"].map((option) => (
                     <label key={option} className="flex items-center gap-3 text-gray-700">
@@ -298,7 +300,7 @@ const index = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-3xl border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t("subscription.cancel")}
                 </button>
                 {user ? (
                   <button
@@ -306,11 +308,11 @@ const index = () => {
                     onClick={handleSubmitApplication}
                     className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
                   >
-                    Submit application
+                    {t("details.submit_application")}
                   </button>
                 ) : (
                   <Link href="/auth/login" className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700">
-                    Sign in to apply
+                    {t("navbar.login")}
                   </Link>
                 )}
               </div>
@@ -356,7 +358,7 @@ const index = () => {
                   onClick={() => setShowUpgradeModal(false)}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-2xl transition"
                 >
-                  Close
+                  {t("auth.close")}
                 </button>
               </div>
             </div>

@@ -3,9 +3,11 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useDispatch } from "react-redux";
 import { login } from "@/Feature/Userslice";
+import { useLanguage } from "@/context/LanguageContext";
 
 const LoginPage = () => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
@@ -67,11 +69,11 @@ const LoginPage = () => {
     setMessage("");
 
     if (!email || !password) {
-      setError("Please enter both email and password.");
+      setError(t("auth.placeholder_enter_pass"));
       return;
     }
     if (otpRequired && !otp) {
-      setError("Please enter the verification OTP code.");
+      setError(t("auth.otp_placeholder"));
       return;
     }
 
@@ -90,7 +92,7 @@ const LoginPage = () => {
         
         if (res.data.requiresOtp) {
           setOtpRequired(true);
-          setMessage("A verification OTP has been sent to your email. Please verify to complete login.");
+          setMessage(t("auth.otp_sent"));
           if (res.data.otp) {
             setSimulatedOtp(res.data.otp);
           }
@@ -105,11 +107,11 @@ const LoginPage = () => {
           if (token) localStorage.setItem('token', token);
         } catch (e) {}
         dispatch(login(dataUser));
-        setMessage('Login successful. Redirecting to home...');
+        setMessage(t("auth.login_success"));
         setTimeout(() => router.push('/'), 800);
       } catch (err: any) {
         console.error(err);
-        setError(err?.response?.data?.error || err?.message || 'Unable to login.');
+        setError(err?.response?.data?.error || err?.message || t("auth.otp_error"));
       }
     })();
   };
@@ -119,12 +121,12 @@ const LoginPage = () => {
       <div className="max-w-md w-full rounded-3xl bg-white p-10 shadow-lg">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
-            {otpRequired ? "Security Verification" : "Login"}
+            {otpRequired ? t("auth.security_verification") : t("navbar.login")}
           </h1>
           <p className="mt-3 text-gray-600 text-sm">
             {otpRequired 
-              ? "We sent a 6-digit verification code to your email." 
-              : "Sign in with your registered email and password."}
+              ? t("auth.otp_required_msg") 
+              : t("auth.credentials_submsg")}
           </p>
         </div>
 
@@ -143,43 +145,43 @@ const LoginPage = () => {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email address
+                {t("auth.email_label")}
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                placeholder={t("auth.placeholder_email")}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
                 required
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                {t("auth.password_label")}
               </label>
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                placeholder={t("auth.placeholder_enter_pass")}
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-900"
                 required
               />
             </div>
 
             <div className="flex justify-end">
-              <Link href="/auth/forgotpassword" className="text-sm text-blue-600 hover:text-blue-700">Forgot password?</Link>
+              <Link href="/auth/forgotpassword" className="text-sm text-blue-600 hover:text-blue-700">{t("auth.forgot_password")}</Link>
             </div>
 
             <button
               type="submit"
               className="w-full rounded-xl bg-blue-600 px-5 py-3 text-white font-medium hover:bg-blue-700 transition"
             >
-              Login
+              {t("navbar.login")}
             </button>
           </form>
         ) : (
@@ -197,7 +199,7 @@ const LoginPage = () => {
 
             <div>
               <label htmlFor="email-static" className="block text-sm font-medium text-gray-700 mb-2">
-                Email address
+                {t("auth.email_label")}
               </label>
               <input
                 id="email-static"
@@ -210,16 +212,16 @@ const LoginPage = () => {
 
             <div>
               <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
-                Verification Code (OTP)
+                {t("auth.enter_otp")}
               </label>
               <input
                 id="otp"
                 type="text"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
-                placeholder="Enter 6-digit OTP"
+                placeholder={t("auth.otp_placeholder")}
                 maxLength={6}
-                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 text-center text-lg font-semibold tracking-widest"
+                className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 text-center text-lg font-semibold tracking-widest text-gray-900"
                 required
               />
               {simulatedOtp && (
@@ -233,7 +235,7 @@ const LoginPage = () => {
               type="submit"
               className="w-full rounded-xl bg-blue-600 px-5 py-3 text-white font-medium hover:bg-blue-700 transition"
             >
-              Verify & Login
+              {t("auth.verify_login")}
             </button>
 
             <button
@@ -247,15 +249,15 @@ const LoginPage = () => {
               }}
               className="w-full text-center text-sm text-gray-500 hover:text-gray-700 font-medium pt-2 block"
             >
-              Back to credentials login
+              {t("auth.back_to_credentials")}
             </button>
           </form>
         )}
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          New here?{' '}
+          {t("auth.no_account")}{' '}
           <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 font-medium">
-            Create account
+            {t("auth.register_title")}
           </Link>
         </div>
       </div>

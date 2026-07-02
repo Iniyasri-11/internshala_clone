@@ -48,14 +48,16 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, phone, photo } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required.' });
-    const existing = await User.findOne({ $or: [{ email }, { name }] });
+    
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await User.findOne({ $or: [{ email: normalizedEmail }, { name }] });
     if (existing) {
-      if (existing.email === email) return res.status(400).json({ error: 'Email already registered.' });
+      if (existing.email === normalizedEmail) return res.status(400).json({ error: 'Email already registered.' });
       return res.status(400).json({ error: 'Username already taken.' });
     }
     const hashed = await bcrypt.hash(password, 10);
     const uid = `user-${Date.now()}`;
-    const user = new User({ uid, name, email, phone, password: hashed, photo: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff&size=128` });
+    const user = new User({ uid, name, email: normalizedEmail, phone, password: hashed, photo: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0D8ABC&color=fff&size=128` });
     await user.save();
     const safe = user.toObject();
     delete safe.password;
@@ -77,6 +79,8 @@ router.post('/login', async (req, res) => {
     const { email, password, otp } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required.' });
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     // 1. Get Client Environment Details
     const ipAddress = req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress || '127.0.0.1';
     const cleanIp = ipAddress.startsWith('::ffff:') ? ipAddress.substring(7) : ipAddress;
@@ -87,10 +91,10 @@ router.post('/login', async (req, res) => {
     const deviceType = req.body.deviceType || parsedAgent.deviceType;
 
     // 2. Authenticate User Credentials
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       await logLoginAttempt({
-        email,
+        email: normalizedEmail,
         uid: null,
         ipAddress: cleanIp,
         browser,
@@ -105,7 +109,7 @@ router.post('/login', async (req, res) => {
     const ok = await bcrypt.compare(password, user.password || '');
     if (!ok) {
       await logLoginAttempt({
-        email,
+        email: normalizedEmail,
         uid: user.uid,
         ipAddress: cleanIp,
         browser,
@@ -124,7 +128,7 @@ router.post('/login', async (req, res) => {
       const isAllowedTime = parts.hour >= 10 && parts.hour < 13;
       if (!isAllowedTime) {
         await logLoginAttempt({
-          email,
+          email: normalizedEmail,
           uid: user.uid,
           ipAddress: cleanIp,
           browser,
@@ -145,15 +149,15 @@ router.post('/login', async (req, res) => {
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         await LoginOtp.findOneAndUpdate(
-          { email },
+          { email: normalizedEmail },
           { otp: otpCode, expiresAt, createdAt: new Date() },
           { upsert: true, new: true }
         );
 
-        const emailResult = await sendLoginOTPEmail(email, user.name || 'User', otpCode);
+        const emailResult = await sendLoginOTPEmail(normalizedEmail, user.name || 'User', otpCode);
 
         await logLoginAttempt({
-          email,
+          email: normalizedEmail,
           uid: user.uid,
           ipAddress: cleanIp,
           browser,
@@ -165,16 +169,16 @@ router.post('/login', async (req, res) => {
 
         return res.json({
           requiresOtp: true,
-          email,
+          email: normalizedEmail,
           simulated: !!emailResult.simulated,
           otp: emailResult.simulated ? otpCode : undefined
         });
       } else {
         // Verify OTP
-        const entry = await LoginOtp.findOne({ email });
+        const entry = await LoginOtp.findOne({ email: normalizedEmail });
         if (!entry) {
           await logLoginAttempt({
-            email,
+            email: normalizedEmail,
             uid: user.uid,
             ipAddress: cleanIp,
             browser,
@@ -188,7 +192,7 @@ router.post('/login', async (req, res) => {
 
         if (entry.expiresAt < new Date()) {
           await logLoginAttempt({
-            email,
+            email: normalizedEmail,
             uid: user.uid,
             ipAddress: cleanIp,
             browser,
@@ -202,7 +206,7 @@ router.post('/login', async (req, res) => {
 
         if (entry.otp !== otp) {
           await logLoginAttempt({
-            email,
+            email: normalizedEmail,
             uid: user.uid,
             ipAddress: cleanIp,
             browser,
@@ -221,7 +225,7 @@ router.post('/login', async (req, res) => {
 
     // 5. Successful Login Authorization
     await logLoginAttempt({
-      email,
+      email: normalizedEmail,
       uid: user.uid,
       ipAddress: cleanIp,
       browser,
@@ -229,7 +233,6 @@ router.post('/login', async (req, res) => {
       deviceType,
       status: "Success",
     });
-
     const safe = user.toObject();
     delete safe.password;
     const token = generateToken(user);

@@ -17,10 +17,12 @@ import { api } from "@/utils/api";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { selectuser } from "@/Feature/Userslice";
+import { useLanguage } from "@/context/LanguageContext";
 
 const index = () => {
   const user = useSelector(selectuser);
   const router = useRouter();
+  const { t } = useLanguage();
   const { id } = router.query;
   const [jobData, setJobData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +55,7 @@ const index = () => {
         }
       } catch (error) {
         console.error(error);
-        setFetchError("Unable to load job details.");
+        setFetchError(t("details.not_found"));
       } finally {
         setIsLoading(false);
       }
@@ -66,11 +68,11 @@ const index = () => {
 
   const handleSubmitApplication = async () => {
     if (!coverLetter.trim()) {
-      toast.error("Please write a cover letter.");
+      toast.error(t("details.write_cover_letter"));
       return;
     }
     if (!availability) {
-      toast.error("Please select your availability.");
+      toast.error(t("details.select_availability"));
       return;
     }
 
@@ -84,7 +86,7 @@ const index = () => {
         availability,
       };
       await api.post("/application", applicationData);
-      toast.success("Application submitted successfully.");
+      toast.success(t("details.success_apply"));
       setHasApplied(true);
       router.push("/job");
     } catch (error: any) {
@@ -114,9 +116,9 @@ const index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="bg-white p-8 rounded-3xl shadow-lg text-center">
-          <p className="text-lg font-semibold text-gray-900">{fetchError || "Job not found."}</p>
+          <p className="text-lg font-semibold text-gray-900">{fetchError || t("details.not_found")}</p>
           <Link href="/job" className="mt-4 inline-flex px-5 py-3 bg-blue-600 text-white rounded-full">
-            Back to jobs
+            {t("details.back_to_jobs")}
           </Link>
         </div>
       </div>
@@ -130,7 +132,7 @@ const index = () => {
           <div className="p-8 border-b border-gray-100">
             <div className="flex items-center gap-3 text-blue-600 mb-4">
               <ArrowUpRight className="h-5 w-5" />
-              <span className="font-semibold">Actively Recruiting</span>
+              <span className="font-semibold">{t("details.actively_hiring")}</span>
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">{jobData?.title}</h1>
             <p className="text-xl text-gray-600 mb-4">{jobData?.company}</p>
@@ -154,8 +156,8 @@ const index = () => {
             <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-2xl font-semibold text-gray-900">About the company</h2>
-                  <p className="text-sm text-gray-500">Learn what makes this company unique.</p>
+                  <h2 className="text-2xl font-semibold text-gray-900">{t("details.about_company")}</h2>
+                  <p className="text-sm text-gray-500">{t("details.about_company_sub")}</p>
                 </div>
                 <span className="text-sm text-gray-500">{jobData?.category || "General"}</span>
               </div>
@@ -163,18 +165,18 @@ const index = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">About the role</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t("details.about_job")}</h2>
               <p className="text-gray-600 leading-7">{jobData?.aboutJob || "No role description available."}</p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Who can apply</h2>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">{t("details.who_can_apply")}</h2>
               <p className="text-gray-600 leading-7">{jobData?.whoCanApply || jobData?.Whocanapply || "Any eligible candidate may apply."}</p>
             </section>
 
             <section className="grid gap-6 lg:grid-cols-2">
               <div className="bg-gray-50 rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Job details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("details.job_details")}</h3>
                 <div className="space-y-3 text-sm text-gray-700">
                   <div className="flex items-center gap-3">
                     <Briefcase className="h-4 w-4 text-blue-600" />
@@ -191,7 +193,7 @@ const index = () => {
                 </div>
               </div>
               <div className="bg-gray-50 rounded-3xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Perks</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">{t("details.perks")}</h3>
                 {Array.isArray(jobData?.perks) && jobData?.perks.length ? (
                   <ul className="space-y-2 text-gray-600">
                     {jobData?.perks.map((perk: string, index: number) => (
@@ -216,46 +218,46 @@ const index = () => {
 
         <aside className="space-y-6">
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Application details</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Snapshot</h2>
             <div className="space-y-4 text-sm text-gray-700">
               <div className="flex items-center justify-between">
                 <span>Company</span>
                 <strong>{jobData?.company}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>CTC</span>
+                <span>{t("home.fields.ctc")}</span>
                 <strong>{jobData?.CTC || "N/A"}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Experience</span>
+                <span>{t("home.fields.experience")}</span>
                 <strong>{jobData?.Experience || "N/A"}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Posted on</span>
+                <span>{t("details.posted_on")}</span>
                 <strong>{new Date(createdAt).toLocaleDateString()}</strong>
               </div>
               <div className="flex items-center justify-between">
-                <span>Category</span>
+                <span>{t("opportunities.category")}</span>
                 <strong>{jobData?.category || "N/A"}</strong>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Apply for this job</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">{t("details.apply_modal_title")}</h2>
             {hasApplied ? (
               <button
                 disabled
                 className="w-full bg-gray-400 text-white py-3 rounded-2xl cursor-not-allowed transition"
               >
-                Already Applied
+                {t("details.already_applied")}
               </button>
             ) : (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="w-full bg-blue-600 text-white py-3 rounded-2xl hover:bg-blue-700 transition cursor-pointer"
               >
-                Apply Now
+                {t("details.apply_now")}
               </button>
             )}
             <p className="mt-3 text-sm text-gray-500">Please login before applying. Your resume will be submitted along with your application.</p>
@@ -268,8 +270,8 @@ const index = () => {
           <div className="bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-xl">
             <div className="flex items-center justify-between border-b border-gray-100 p-6">
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900">Apply to {jobData?.company}</h3>
-                <p className="text-sm text-gray-500">Complete your application and submit your cover letter.</p>
+                <h3 className="text-2xl font-semibold text-gray-900">{t("details.apply_modal_title")}</h3>
+                <p className="text-sm text-gray-500">Complete your application to {jobData?.company}.</p>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700">
                 <X className="h-6 w-6" />
@@ -277,7 +279,7 @@ const index = () => {
             </div>
             <div className="p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cover Letter</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t("details.cover_letter_label")}</label>
                 <textarea
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
@@ -287,7 +289,7 @@ const index = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Availability</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t("details.availability_label")}</label>
                 <div className="space-y-3">
                   {["Available immediately", "Available after notice period", "Available in 1 month", "Other"].map((option) => (
                     <label key={option} className="flex items-center gap-3 text-gray-700">
@@ -310,7 +312,7 @@ const index = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="rounded-3xl border border-gray-200 px-6 py-3 text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  {t("subscription.cancel")}
                 </button>
                 {user ? (
                   <button
@@ -318,11 +320,11 @@ const index = () => {
                     onClick={handleSubmitApplication}
                     className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
                   >
-                    Submit application
+                    {t("details.submit_application")}
                   </button>
                 ) : (
                   <Link href="/auth/login" className="rounded-3xl bg-blue-600 px-6 py-3 text-white hover:bg-blue-700">
-                    Sign in to apply
+                    {t("navbar.login")}
                   </Link>
                 )}
               </div>
@@ -368,7 +370,7 @@ const index = () => {
                   onClick={() => setShowUpgradeModal(false)}
                   className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-2xl transition"
                 >
-                  Close
+                  {t("auth.close")}
                 </button>
               </div>
             </div>

@@ -304,23 +304,25 @@ router.post("/send-lang-otp", async (req, res) => {
       return res.status(400).json({ error: "Email is required." });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Generate random 6 digit OTP code
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Upsert the OTP in LanguageOtp collection
     await LanguageOtp.findOneAndUpdate(
-      { email },
+      { email: normalizedEmail },
       { otp, expiresAt, createdAt: new Date() },
       { upsert: true, new: true }
     );
 
     // Find user name if exists
-    const user = await User.findOne({ email }).lean();
+    const user = await User.findOne({ email: normalizedEmail }).lean();
     const name = user ? user.name : "User";
 
     // Send the email
-    const emailResult = await sendLanguageOTPEmail(email, name, otp);
+    const emailResult = await sendLanguageOTPEmail(normalizedEmail, name, otp);
 
     return res.json({
       success: true,
@@ -342,8 +344,10 @@ router.post("/verify-lang-otp", async (req, res) => {
       return res.status(400).json({ error: "Email and OTP are required." });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     // Find the latest OTP entry
-    const entry = await LanguageOtp.findOne({ email });
+    const entry = await LanguageOtp.findOne({ email: normalizedEmail });
     if (!entry) {
       return res.status(400).json({ error: "No OTP request found for this email. Please request a new OTP." });
     }
@@ -372,7 +376,8 @@ router.post("/verify-lang-otp", async (req, res) => {
 // GET /login-history
 router.get("/login-history", auth, async (req, res) => {
   try {
-    const history = await LoginHistory.find({ email: req.user.email })
+    const normalizedEmail = req.user.email ? req.user.email.toLowerCase().trim() : "";
+    const history = await LoginHistory.find({ email: normalizedEmail })
       .sort({ createdAt: -1 })
       .limit(10);
     return res.json({ history });
@@ -414,8 +419,9 @@ router.post("/update-photo", auth, upload.single("photo"), async (req, res) => {
       return res.status(400).json({ error: "Please upload an image file." });
     }
     const photoUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+    const normalizedEmail = req.user.email ? req.user.email.toLowerCase().trim() : "";
     const user = await User.findOneAndUpdate(
-      { email: req.user.email },
+      { email: normalizedEmail },
       { photo: photoUrl },
       { new: true }
     );
