@@ -5,6 +5,7 @@ import { selectuser } from "@/Feature/Userslice";
 import { api } from "@/utils/api";
 import { Heart, MessageSquare, Share2, Sparkles, Bell, ThumbsUp, ThumbsDown } from "lucide-react";
 import { toast } from "react-toastify";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface MediaFile {
   file: File;
@@ -12,6 +13,7 @@ interface MediaFile {
 }
 
 const CommunityPage = () => {
+  const { t } = useLanguage();
   const user = useSelector(selectuser);
   const [text, setText] = useState("");
   const [hashtags, setHashtags] = useState("");
@@ -188,7 +190,7 @@ const CommunityPage = () => {
       formData.append("text", text);
       formData.append("hashtags", hashtags);
       mediaFiles.forEach((item) => formData.append("media", item.file));
-      const response = await api.post("/social/posts", formData, {
+      await api.post("/social/posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         onUploadProgress: (progressEvent) => {
           const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
@@ -199,51 +201,45 @@ const CommunityPage = () => {
       setHashtags("");
       setMediaFiles([]);
       setUploadProgress(0);
-      await fetchFeed();
-      await fetchLimit();
-      toast.success("Your post was shared successfully.");
-    } catch (error: any) {
-      console.error("Create post failed", error);
-      toast.error("Unable to share your post right now.");
+      toast.success("Post shared successfully");
+      await Promise.all([fetchFeed(), fetchTrending(), fetchLimit()]);
+    } catch (error) {
+      console.error("Create post error", error);
+      toast.error("Failed to share update. Check connection and limit.");
     }
   };
 
-  const setActionBusy = (postId: string, busy: boolean) => {
-    setActionLoading((prev) => ({ ...prev, [postId]: busy }));
+  const setActionBusy = (postId: string, state: boolean) => {
+    setActionLoading((prev) => ({ ...prev, [postId]: state }));
   };
-
-  const [likeAnim, setLikeAnim] = useState<Record<string, boolean>>({});
 
   const handleLike = async (postId: string) => {
     if (!user) return;
     try {
       setActionBusy(postId, true);
-      // small animation
-      setLikeAnim((p) => ({ ...p, [postId]: true }));
       const response = await api.post(`/social/posts/${postId}/like`, { user: JSON.stringify(user) });
       const updatedPost = response.data;
       setPosts((prev) => prev.map((post) => (post._id === updatedPost._id ? updatedPost : post)));
-      toast.success("Post liked");
-      setTimeout(() => setLikeAnim((p) => ({ ...p, [postId]: false })), 300);
     } catch (error) {
       console.error("Like failed", error);
-      toast.error("Unable to like post.");
     } finally {
       setActionBusy(postId, false);
     }
   };
 
-  const handleCommentReact = async (postId: string, commentId: string, type: 'up' | 'down') => {
+  const handleCommentReact = async (postId: string, commentId: string, reaction: 'up' | 'down') => {
     if (!user) return;
     try {
       setActionBusy(postId, true);
-      const resp = await api.post(`/social/posts/${postId}/comments/${commentId}/react`, { user: JSON.stringify(user), type });
-      const updatedPost = resp.data;
+      const response = await api.post(`/social/posts/${postId}/comment/${commentId}/react`, {
+        user: JSON.stringify(user),
+        type: reaction,
+      });
+      const updatedPost = response.data;
       setPosts((prev) => prev.map((p) => (p._id === updatedPost._id ? updatedPost : p)));
-    } catch (err: any) {
-      console.error('React failed', err);
-      const msg = err?.response?.data?.detail || err?.response?.data?.error || err?.message || 'Unable to react to comment';
-      toast.error(msg);
+    } catch (error) {
+      console.error("Comment react failed", error);
+      toast.error("Failed to react to comment");
     } finally {
       setActionBusy(postId, false);
     }
@@ -274,9 +270,7 @@ const CommunityPage = () => {
   };
 
   const openPanelFor = (postId: string, type: 'share' | 'report' | 'comments') => {
-    // ensure only one panel is open at a time globally
     setOpenPanel({ type, postId });
-    // sync individual states
     if (type === 'share') {
       const shareUrl = getPostShareUrl(postId);
       setShareTarget({ postId, url: shareUrl });
@@ -292,7 +286,6 @@ const CommunityPage = () => {
         return newState;
       });
     } else if (type === 'comments') {
-      // toggle comments for this post but close others
       setCommentsOpen((prev) => {
         const keys = Object.keys(prev || {});
         const newState: Record<string, boolean> = {};
@@ -329,22 +322,6 @@ const CommunityPage = () => {
     }
   };
 
-  const handleReport = async (postId: string) => {
-    if (!user) return;
-    try {
-      setActionBusy(postId, true);
-      // fallback: if called directly, use a default reason
-      await api.post(`/social/posts/${postId}/report`, { user: JSON.stringify(user), reason: "Inappropriate content" });
-      toast.success("Post reported");
-      await fetchFeed();
-    } catch (error) {
-      console.error("Report failed", error);
-      toast.error("Unable to report post.");
-    } finally {
-      setActionBusy(postId, false);
-    }
-  };
-
   const submitReport = async (postId: string) => {
     if (!user) return;
     const reason = (reportText[postId] || "").trim() || "Inappropriate content";
@@ -364,10 +341,10 @@ const CommunityPage = () => {
   };
 
   const remainingText = useMemo(() => {
-    if (!limitData) return "Checking your posting limits...";
+    if (!limitData) return "Checking limits...";
     if (limitData.limit === 0) return "Need friends before posting";
-    if (limitData.limit === Infinity) return "Unlimited posts available";
-    return `${limitData.remaining} of ${limitData.limit} posts left today`;
+    if (limitData.limit === Infinity) return "Unlimited posts";
+    return `${limitData.remaining} / ${limitData.limit} remaining`;
   }, [limitData]);
 
   if (!user) {
@@ -375,15 +352,15 @@ const CommunityPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
         <div className="max-w-xl w-full rounded-3xl bg-white p-10 shadow-lg text-center">
           <Sparkles className="mx-auto mb-4 h-12 w-12 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Join the community</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t("community.community_hub")}</h1>
           <p className="mt-3 text-gray-600">
-            Sign in with Google to share posts, connect with peers, and engage in the public feed.
+            Sign in to share posts, connect with peers, and engage in the public feed.
           </p>
           <a
             href="/"
             className="mt-8 inline-block rounded-full bg-blue-600 px-6 py-3 text-white shadow hover:bg-blue-700"
           >
-            Go sign in
+            {t("navbar.login")}
           </a>
         </div>
       </div>
@@ -391,14 +368,14 @@ const CommunityPage = () => {
   }
 
   return (
-    <div className="py-8">
+    <div className="py-8 text-left">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid gap-6 xl:grid-cols-[1.8fr_1fr]">
           <div className="space-y-6">
             <div className="rounded-3xl bg-white p-6 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Public Space</h1>
+                  <h1 className="text-xl font-semibold text-gray-900">{t("community.community_hub")}</h1>
                   <p className="text-sm text-gray-500">Share updates, photos, videos and join the conversation.</p>
                 </div>
                 <div className="rounded-2xl bg-blue-50 px-4 py-2 text-blue-700 text-sm">
@@ -411,7 +388,7 @@ const CommunityPage = () => {
                   maxLength={1000}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Share something with the community..."
+                  placeholder={t("community.write_post_placeholder")}
                   className="w-full rounded-3xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <div className="space-y-3">
@@ -423,7 +400,7 @@ const CommunityPage = () => {
                     <input
                       type="text"
                       className="flex-1 rounded-3xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Add hashtags, separated by commas"
+                      placeholder={t("community.hashtags_placeholder")}
                       value={hashtags}
                       onChange={(e) => setHashtags(e.target.value)}
                     />
@@ -433,7 +410,7 @@ const CommunityPage = () => {
                       disabled={!limitData || limitData.limit === 0 || (limitData.limit !== Infinity && limitData.remaining <= 0)}
                       className="rounded-3xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-700 disabled:cursor-not-allowed"
                     >
-                      Share update
+                      {t("community.share_button")}
                     </button>
                   </div>
                   {uploadProgress > 0 && uploadProgress < 100 && (
@@ -459,7 +436,7 @@ const CommunityPage = () => {
             </div>
 
             {loading ? (
-              <div className="rounded-3xl bg-white p-8 shadow-sm">Loading posts...</div>
+              <div className="rounded-3xl bg-white p-8 shadow-sm">Loading feed...</div>
             ) : (
               posts.map((post) => (
                 <div key={post._id} id={`post-${post._id}`} className="rounded-3xl bg-white p-6 shadow-sm">
@@ -470,7 +447,7 @@ const CommunityPage = () => {
                       className="h-12 w-12 rounded-full object-cover"
                     />
                     <div className="flex-1">
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <h2 className="text-base font-semibold text-gray-900">{post.author.name}</h2>
                           <p className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleString()}</p>
@@ -547,7 +524,7 @@ const CommunityPage = () => {
                       </div>
                       {reportOpen === post._id && (
                         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
-                          <div className="mb-3 text-sm font-semibold text-red-800">Report this post</div>
+                          <div className="mb-3 text-sm font-semibold text-red-800">{t("community.report")}</div>
                           <textarea
                             rows={3}
                             value={reportText[post._id] || ""}
@@ -557,7 +534,7 @@ const CommunityPage = () => {
                           />
                           <div className="mt-3 flex gap-2 justify-end">
                             <button type="button" onClick={() => closeAllPanels()} className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                              Cancel
+                              {t("subscription.cancel")}
                             </button>
                             <button
                               type="button"
@@ -565,14 +542,14 @@ const CommunityPage = () => {
                               disabled={!!actionLoading[post._id]}
                               className="rounded-full bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                             >
-                              Submit
+                              {t("details.submit_application")}
                             </button>
                           </div>
                         </div>
                       )}
                       {shareTarget?.postId === post._id && (
                         <div className="mt-4 rounded-3xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                          <div className="mb-2 font-semibold">Share this post</div>
+                          <div className="mb-2 font-semibold">{t("community.share")}</div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <input
                               type="text"
@@ -590,7 +567,7 @@ const CommunityPage = () => {
                               }}
                               className="rounded-3xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
                             >
-                              Copy link
+                              {t("community.copy_link")}
                             </button>
                           </div>
                         </div>
@@ -598,30 +575,30 @@ const CommunityPage = () => {
                       {commentsOpen[post._id] && (
                         <>
                           <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <div className="mb-3 text-sm font-semibold text-gray-900">Add a comment</div>
+                            <div className="mb-3 text-sm font-semibold text-gray-900">{t("community.write_comment_placeholder")}</div>
                             <textarea
                               rows={2}
                               value={commentText[post._id] || ""}
                               onChange={(e) => setCommentText((prev) => ({ ...prev, [post._id]: e.target.value }))}
-                              placeholder="Write a reply..."
+                              placeholder={t("community.write_comment_placeholder")}
                               className="w-full rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                             <div className="mt-3 flex justify-between items-center gap-3">
-                              <span className="text-xs text-gray-600 font-medium">{post.comments?.length || 0} comment{post.comments?.length === 1 ? '' : 's'}</span>
+                              <span className="text-xs text-gray-600 font-medium">{post.comments?.length || 0} {t("community.comments")}</span>
                               <button
                                 type="button"
                                 onClick={() => handleComment(post._id)}
                                 disabled={!!actionLoading[post._id]}
                                 className="rounded-full bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                Post
+                                {t("community.post_button")}
                               </button>
                             </div>
                           </div>
 
                           {post.comments?.length > 0 && (
                             <div className="mt-4 space-y-3 rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                              <div className="text-sm font-semibold text-gray-900">Comments</div>
+                              <div className="text-sm font-semibold text-gray-900">{t("community.comments")}</div>
                               {post.comments.filter((c: any) => !c.parentId).map((comment: any) => {
                                 const up = comment.upCount || 0;
                                 const down = comment.downCount || 0;
@@ -663,7 +640,7 @@ const CommunityPage = () => {
                                             onClick={() => setReplyText((p) => ({ ...p, [comment._id]: p[comment._id] || "" }))}
                                             className="text-xs text-blue-600"
                                           >
-                                            Reply
+                                            {t("community.post_reply")}
                                           </button>
                                         </div>
 
@@ -678,7 +655,7 @@ const CommunityPage = () => {
                                               className="w-full rounded-2xl border border-gray-200 bg-white p-3 text-sm text-gray-900 focus:outline-none"
                                             />
                                             <div className="mt-2 flex justify-end gap-2">
-                                              <button type="button" onClick={() => setReplyText((p) => ({ ...p, [comment._id]: undefined }))} className="rounded-3xl border border-gray-200 px-3 py-1 text-sm">Cancel</button>
+                                              <button type="button" onClick={() => setReplyText((p) => ({ ...p, [comment._id]: undefined }))} className="rounded-3xl border border-gray-200 px-3 py-1 text-sm">{t("subscription.cancel")}</button>
                                               <button
                                                 type="button"
                                                 onClick={async () => {
@@ -701,7 +678,7 @@ const CommunityPage = () => {
                                                 }}
                                                 className="rounded-3xl bg-blue-600 px-3 py-1 text-sm text-white"
                                               >
-                                                Reply
+                                                {t("community.post_reply")}
                                               </button>
                                             </div>
                                           </div>
@@ -763,7 +740,7 @@ const CommunityPage = () => {
             <div className="rounded-3xl bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <Sparkles className="h-5 w-5 text-pink-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Trending posts</h2>
+                <h2 className="text-lg font-semibold text-gray-900">{t("community.trending_heading")}</h2>
               </div>
               <div className="mt-4 space-y-3">
                 {trendPosts.map((trend) => (
@@ -771,8 +748,8 @@ const CommunityPage = () => {
                     <p className="text-sm font-semibold text-gray-900">{trend.author.name}</p>
                     <p className="mt-1 text-sm text-gray-600 line-clamp-2">{trend.text}</p>
                     <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                      <span>{trend.likes?.length || 0} likes</span>
-                      <span>{trend.comments?.length || 0} comments</span>
+                      <span>{trend.likes?.length || 0} {t("community.likes")}</span>
+                      <span>{trend.comments?.length || 0} {t("community.comments")}</span>
                     </div>
                   </div>
                 ))}

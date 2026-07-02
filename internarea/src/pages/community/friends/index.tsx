@@ -5,8 +5,10 @@ import { Bell, MessageSquare, X, Check } from "lucide-react";
 import { api } from "@/utils/api";
 import { selectuser } from "@/Feature/Userslice";
 import { toast } from "react-toastify";
+import { useLanguage } from "@/context/LanguageContext";
 
 const FriendsPage = () => {
+  const { t } = useLanguage();
   const user = useSelector(selectuser);
   const [friends, setFriends] = useState<any[]>([]);
   const [posts, setPosts] = useState<any[]>([]);
@@ -212,7 +214,7 @@ const FriendsPage = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-20">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-20 text-center">
         <div className="max-w-xl rounded-3xl bg-white p-10 text-center shadow-lg">
           <h1 className="text-2xl font-semibold text-gray-900">Sign in to view your friends</h1>
           <p className="mt-4 text-gray-600">Please sign in from the homepage to see your friends and their posts.</p>
@@ -225,16 +227,16 @@ const FriendsPage = () => {
   }
 
   return (
-    <div className="py-8">
+    <div className="py-8 text-left">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Friends Network</h1>
+            <h1 className="text-3xl font-bold text-gray-900">{t("community.friends_hub")}</h1>
             <p className="mt-2 text-gray-600">Manage your connections, view requests, and message friends directly.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link href="/community" className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 border border-gray-205 hover:bg-gray-50 transition shadow-sm">
-              Back to Community
+              {t("community.community_hub")}
             </Link>
           </div>
         </div>
@@ -243,7 +245,6 @@ const FriendsPage = () => {
           {/* Main pane (left column) */}
           <section className="space-y-6">
             {selectedFriend ? (
-              /* Spacing and visual design for Chat workspace */
               <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-200">
                 <div className="pb-4 border-b border-gray-150 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -260,7 +261,7 @@ const FriendsPage = () => {
                   <button
                     onClick={() => setSelectedFriend(null)}
                     className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition cursor-pointer"
-                    title="Close Chat"
+                    title={t("auth.close")}
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -315,7 +316,7 @@ const FriendsPage = () => {
                     onClick={handleSendMessage}
                     className="rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition cursor-pointer"
                   >
-                    Send
+                    {t("community.send")}
                   </button>
                 </div>
               </div>
@@ -324,8 +325,8 @@ const FriendsPage = () => {
               <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-200">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Friends' Posts</h2>
-                    <p className="mt-1 text-sm text-gray-500">Latest activity from your friend network.</p>
+                    <h2 className="text-xl font-semibold text-gray-900">{t("community.friends_posts")}</h2>
+                    <p className="mt-1 text-sm text-gray-500">{t("community.friends_posts_desc")}</p>
                   </div>
                   <div className="flex items-center gap-3">
                     {hasPendingRequests ? (
@@ -344,7 +345,7 @@ const FriendsPage = () => {
                   <div className="mt-6 text-gray-500">Loading posts...</div>
                 ) : posts.length === 0 ? (
                   <div className="mt-6 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-8 text-center text-sm text-gray-500">
-                    No posts from friends yet. Connect with others in the community to see posts here.
+                    {t("community.no_friends_posts")}
                   </div>
                 ) : (
                   <div className="mt-6 space-y-6">
@@ -390,20 +391,20 @@ const FriendsPage = () => {
             <div className="rounded-3xl bg-white p-6 shadow-sm border border-gray-200">
               <div className="flex items-center justify-between gap-4">
                 <div className="text-left">
-                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">Connections</p>
-                  <h2 className="mt-1 text-2xl font-bold text-gray-900">Friends Hub</h2>
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-400">{t("community.connections")}</p>
+                  <h2 className="mt-1 text-2xl font-bold text-gray-900">{t("community.friends_hub")}</h2>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-700">
                   <span>{friends.length}</span>
-                  <span>friends</span>
+                  <span>{t("community.friends")}</span>
                 </div>
               </div>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {[
-                  { key: "friends", label: "Friends", count: filteredFriends.length },
-                  { key: "incoming", label: "Incoming", count: filteredIncomingRequests.length },
-                  { key: "outgoing", label: "Outgoing", count: filteredOutgoingRequests.length },
-                  { key: "suggestions", label: "Suggestions", count: filteredSuggestions.length },
+                  { key: "friends", label: t("community.friends"), count: filteredFriends.length },
+                  { key: "incoming", label: t("community.incoming"), count: filteredIncomingRequests.length },
+                  { key: "outgoing", label: t("community.outgoing"), count: filteredOutgoingRequests.length },
+                  { key: "suggestions", label: t("community.suggestions"), count: filteredSuggestions.length },
                 ].map((tabItem) => (
                   <button
                     key={tabItem.key}
@@ -435,7 +436,7 @@ const FriendsPage = () => {
               <div className="flex items-center justify-between gap-4">
                 <div className="text-left">
                   <h3 className="text-lg font-bold text-gray-900">
-                    {activeTab === "friends" ? "Your Friends" : activeTab === "incoming" ? "Incoming Requests" : activeTab === "outgoing" ? "Outgoing Requests" : "Suggested Connections"}
+                    {activeTab === "friends" ? t("community.your_friends") : activeTab === "incoming" ? t("community.incoming_requests") : activeTab === "outgoing" ? t("community.outgoing_requests") : t("community.suggested_connections")}
                   </h3>
                   <p className="mt-1 text-xs text-gray-500 leading-relaxed">
                     {activeTab === "friends"
@@ -454,15 +455,7 @@ const FriendsPage = () => {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={
-                    activeTab === "friends"
-                      ? "Search friends..."
-                      : activeTab === "incoming"
-                      ? "Search incoming requests..."
-                      : activeTab === "outgoing"
-                      ? "Search outgoing requests..."
-                      : "Search suggestions..."
-                  }
+                  placeholder={t("community.search_friends")}
                   className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -518,7 +511,7 @@ const FriendsPage = () => {
                   <>
                     {filteredIncomingRequests.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-xs text-gray-500">
-                        {incomingRequests.length === 0 ? "No incoming friend requests." : "No incoming requests match your search."}
+                        {incomingRequests.length === 0 ? t("community.no_incoming") : "No incoming requests match your search."}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -540,7 +533,7 @@ const FriendsPage = () => {
                                     onClick={() => handleAcceptRequest(request.uid)}
                                     disabled={!!requestActionLoading[key]}
                                     className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-full transition cursor-pointer disabled:opacity-50"
-                                    title="Accept"
+                                    title={t("community.accept_button")}
                                   >
                                     <Check className="h-3.5 w-3.5" />
                                   </button>
@@ -549,7 +542,7 @@ const FriendsPage = () => {
                                     onClick={() => handleRejectRequest(request.uid)}
                                     disabled={!!requestActionLoading[key]}
                                     className="p-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full transition cursor-pointer disabled:opacity-50"
-                                    title="Reject"
+                                    title={t("community.reject_button")}
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
@@ -567,7 +560,7 @@ const FriendsPage = () => {
                   <>
                     {filteredOutgoingRequests.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-xs text-gray-500">
-                        {outgoingRequests.length === 0 ? "No outgoing requests yet." : "No outgoing requests match your search."}
+                        {outgoingRequests.length === 0 ? t("community.no_outgoing") : "No outgoing requests match your search."}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -608,7 +601,7 @@ const FriendsPage = () => {
                   <>
                     {filteredSuggestions.length === 0 ? (
                       <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-xs text-gray-500">
-                        No friend suggestions found.
+                        {t("community.no_suggestions")}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -638,7 +631,7 @@ const FriendsPage = () => {
                                       : "bg-blue-600 text-white hover:bg-blue-700"
                                   }`}
                                 >
-                                  {isConnected ? "Connected" : isRequested ? "Sent" : "Add Friend"}
+                                  {isConnected ? "Connected" : isRequested ? "Sent" : t("community.connect_button")}
                                 </button>
                               </div>
                             </div>
